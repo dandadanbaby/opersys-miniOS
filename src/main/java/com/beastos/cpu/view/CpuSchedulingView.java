@@ -68,8 +68,16 @@ public class CpuSchedulingView extends ScrollPane {
         setHbarPolicy(ScrollBarPolicy.NEVER);
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
 
-        // Add 4 default process rows
-        for (int i = 0; i < 4; i++) addProcessRow();
+        // Add default process rows matching Design References/Modules/cpu-scheduling.png
+        addProcessRow("P1", "0", "8", "3");
+        addProcessRow("P2", "1", "4", "1");
+        addProcessRow("P3", "2", "9", "4");
+        addProcessRow("P4", "3", "5", "2");
+
+        // Select Round Robin and run simulation on launch
+        selectAlgorithm("Round Robin");
+        quantumField.setText("4");
+        runSimulation();
     }
 
     // ----------------------------------------------------------------
@@ -105,10 +113,10 @@ public class CpuSchedulingView extends ScrollPane {
     //  Stat Cards
     // ----------------------------------------------------------------
     private HBox createStatCards() {
-        VBox card1 = buildStatCard("ACTIVE PROCESSES", "⚙", activeProcessesValue, "");
-        VBox card2 = buildStatCard("AVG WAITING TIME", "⏱", avgWaitingValue, "ms");
-        VBox card3 = buildStatCard("AVG TURNAROUND TIME", "⏳", avgTurnaroundValue, "ms");
-        VBox card4 = buildStatCard("CPU UTILIZATION", "📊", cpuUtilValue, "");
+        VBox card1 = buildStatCard("ACTIVE PROCESSES", activeProcessesValue, "", "+2 this session", "#22c55e");
+        VBox card2 = buildStatCard("AVG WAITING TIME", avgWaitingValue, "ms", "Average queue wait", "#2dd4bf");
+        VBox card3 = buildStatCard("AVG TURNAROUND TIME", avgTurnaroundValue, "ms", "Dispatch to completion", "#3b82f6");
+        VBox card4 = buildStatCard("CPU UTILIZATION", cpuUtilValue, "", "Optimal throughput", "#22c55e");
 
         HBox row = new HBox(14, card1, card2, card3, card4);
         row.setAlignment(Pos.TOP_LEFT);
@@ -119,16 +127,16 @@ public class CpuSchedulingView extends ScrollPane {
         return row;
     }
 
-    private VBox buildStatCard(String labelText, String icon, Label valueLabel, String unitText) {
+    private VBox buildStatCard(String labelText, Label valueLabel, String unitText, String descText, String colorHex) {
         Label cardLabel = new Label(labelText);
         cardLabel.getStyleClass().add("stat-card-label");
 
-        Label iconLabel = new Label(icon);
-        iconLabel.getStyleClass().add("stat-card-icon");
+        Region badge = new Region();
+        badge.setStyle("-fx-background-color: " + colorHex + "; -fx-background-radius: 4; -fx-min-width: 8; -fx-min-height: 8; -fx-max-width: 8; -fx-max-height: 8;");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox topRow = new HBox(cardLabel, spacer, iconLabel);
+        HBox topRow = new HBox(cardLabel, spacer, badge);
         topRow.setAlignment(Pos.CENTER);
 
         valueLabel.getStyleClass().add("stat-card-value");
@@ -139,7 +147,14 @@ public class CpuSchedulingView extends ScrollPane {
         HBox valueRow = new HBox(4, valueLabel, unitLabel);
         valueRow.setAlignment(Pos.BOTTOM_LEFT);
 
-        Label descLabel = new Label(" ");
+        Label descLabel = new Label(descText);
+        descLabel.getStyleClass().add("stat-card-description");
+        descLabel.setStyle("-fx-text-fill: " + colorHex + ";");
+
+        VBox card = new VBox(4, topRow, valueRow, descLabel);
+        card.getStyleClass().add("stat-card");
+        return card;
+    }
         descLabel.getStyleClass().add("stat-card-description");
 
         VBox card = new VBox(4, topRow, valueRow, descLabel);
@@ -288,20 +303,24 @@ public class CpuSchedulingView extends ScrollPane {
 
     private void addProcessRow() {
         processCounter++;
-        String pid = "P" + processCounter;
+        addProcessRow("P" + processCounter, "", "", "");
+    }
+
+    private void addProcessRow(String pid, String at, String bt, String pr) {
+        processCounter = Math.max(processCounter, pid.startsWith("P") ? Integer.parseInt(pid.substring(1)) : processCounter);
 
         TextField pidField = new TextField(pid);
         pidField.setPrefWidth(90);
 
-        TextField atField = new TextField();
+        TextField atField = new TextField(at);
         atField.setPrefWidth(90);
         atField.setPromptText("0");
 
-        TextField btField = new TextField();
+        TextField btField = new TextField(bt);
         btField.setPrefWidth(90);
         btField.setPromptText("1");
 
-        TextField prField = new TextField();
+        TextField prField = new TextField(pr);
         prField.setPrefWidth(80);
         prField.setPromptText("0");
 

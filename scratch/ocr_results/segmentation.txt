@@ -1,0 +1,77 @@
+IMAGE: segmentation.png (2752x1536)
+BEAST
+OS
+WORKSPACE
+Overview
+MODULES
+OPU Scheduling
+Banker's Algorithm
+Paging
+Page Replacement
+CIL] Segmentation
+Fregmentation
+@ Disk Scheduling
+( / ) Multiprogramming
+LOCAL WORKSPACE
+All systems operational
+BEAST OS vl.o.o
+WORKSPACE
+I Segmentation
+OPERATING SYSTEM WORKBENCH
+Segmentation
+COMMAND CENTER
+Segment register mapping, logical-to-physical translation, and trap detection.
+VALIDATION
+VALID
+System Time:
+PHYSICAL ADDRESS
+6620
+TOTAL SEGMENTS
+05
+Seg/count
+Segment Table
+TARGET SEGMENT
+eg
+seg 1
+Segment Table Configuration (Segment I Base Address I Limit)
+Physical Memory Map
+Segments mapped proportionally in RAM
+OS Simulation Status : ACTIVE
+New Simulation
+6620
+Segment No.
+seg O
+Seg 1
+seg 2
+seg 3
+Seg 4
+Base Address
+1400
+6300
+2000
+7200
+Limit (Length)
+100
+400
+500
+250
+150
+7200
+6300
+4300
+2000
+1400
+Space [Limit]
+seg 1 [Base 6300, Limit 400]
+Space [Limit]
+seg 2 [Base 4300, Limit 500]
+Space [Limit]
+ase
+Imi
+Logical Address Validation & Trap Log
+Logical Address (Segment 1, Offset 320) Base 6300 + Offset 320 -
+Logical Address (Segment 1, Offset 10) Base 6300 + Offset IO
+seg O [Base 1400, Limit 100]
+Physical Address 6620 (SUCCESS)
+Physical Address 6310 (SUCCESS)
+SEGMENTATION FAULT (Trap): Offset Exceeds Limit. Attempt to access Seg 1 at Offset 450 exceeds limit (400). Execution halted.

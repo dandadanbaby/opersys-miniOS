@@ -67,9 +67,15 @@ public class FragmentationView extends ScrollPane {
         setHbarPolicy(ScrollBarPolicy.NEVER);
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
 
-        // Default blocks and processes
-        for (int i = 0; i < 5; i++) addBlockRow();
-        for (int i = 0; i < 6; i++) addProcessRow();
+        // Default blocks and processes matching Design References/Modules/fragmentation.png
+        int[] defaultBlocks = {100, 150, 370, 180, 50};
+        for (int b : defaultBlocks) addBlockRow(String.valueOf(b));
+
+        int[] defaultProcs = {80, 120, 320, 150, 80, 30};
+        for (int p : defaultProcs) addProcessRow(String.valueOf(p));
+
+        // Pre-run allocation on startup
+        runAllocation();
     }
 
     private VBox createHeader() {
@@ -95,12 +101,12 @@ public class FragmentationView extends ScrollPane {
     }
 
     private HBox createStatCards() {
-        VBox c1 = buildStatCard("MEMORY BLOCKS", "🧱", memBlocksValue, " ");
-        VBox c2 = buildStatCard("ALLOCATED PROCESSES", "👤", allocatedValue, " ");
+        VBox c1 = buildStatCard("MEMORY BLOCKS", memBlocksValue, "Partition pool", "#3b82f6");
+        VBox c2 = buildStatCard("ALLOCATED PROCESSES", allocatedValue, "01 in queue", "#22c55e");
         allocatedSub.getStyleClass().add("stat-card-description");
-        VBox c3 = buildStatCard("TOTAL INTERNAL FRAG", "■", intFragValue, " ");
+        VBox c3 = buildStatCard("TOTAL INTERNAL FRAG", intFragValue, "150 KB wasted in blocks", "#f59e0b");
         intFragValue.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #f59e0b;");
-        VBox c4 = buildStatCard("EXTERNAL FRAG", "□", extFragValue, " ");
+        VBox c4 = buildStatCard("EXTERNAL FRAG", extFragValue, "120 KB unusable space", "#ef4444");
 
         HBox row = new HBox(14, c1, c2, c3, c4);
         row.setAlignment(Pos.TOP_LEFT);
@@ -108,18 +114,19 @@ public class FragmentationView extends ScrollPane {
         return row;
     }
 
-    private VBox buildStatCard(String label, String icon, Label value, String descText) {
+    private VBox buildStatCard(String label, Label value, String descText, String accentColor) {
         Label l = new Label(label);
         l.getStyleClass().add("stat-card-label");
-        Label ic = new Label(icon);
-        ic.getStyleClass().add("stat-card-icon");
+        Region dot = new Region();
+        dot.setStyle("-fx-background-color: " + accentColor + "; -fx-background-radius: 4; -fx-min-width: 8; -fx-min-height: 8; -fx-max-width: 8; -fx-max-height: 8;");
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
-        HBox top = new HBox(l, sp, ic);
+        HBox top = new HBox(l, sp, dot);
         top.setAlignment(Pos.CENTER);
         value.getStyleClass().add("stat-card-value");
         Label d = new Label(descText);
         d.getStyleClass().add("stat-card-description");
+        d.setStyle("-fx-text-fill: " + accentColor + ";");
         VBox card = new VBox(4, top, value, d);
         card.getStyleClass().add("stat-card");
         return card;
@@ -224,11 +231,15 @@ public class FragmentationView extends ScrollPane {
     }
 
     private void addBlockRow() {
+        addBlockRow("");
+    }
+
+    private void addBlockRow(String val) {
         blockCounter++;
         Label lbl = new Label("Block " + blockCounter + ":");
         lbl.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8;");
         lbl.setPrefWidth(70);
-        TextField field = new TextField();
+        TextField field = new TextField(val);
         field.setPromptText("Size KB");
         field.setPrefWidth(90);
         Button del = new Button("✕");
@@ -241,11 +252,15 @@ public class FragmentationView extends ScrollPane {
     }
 
     private void addProcessRow() {
+        addProcessRow("");
+    }
+
+    private void addProcessRow(String val) {
         processCounter++;
         Label lbl = new Label("P" + processCounter + ":");
         lbl.setStyle("-fx-font-size: 12px; -fx-text-fill: #2dd4bf; -fx-font-weight: bold;");
         lbl.setPrefWidth(40);
-        TextField field = new TextField();
+        TextField field = new TextField(val);
         field.setPromptText("Size KB");
         field.setPrefWidth(90);
         Button del = new Button("✕");

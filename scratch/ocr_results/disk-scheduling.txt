@@ -1,0 +1,121 @@
+IMAGE: disk-scheduling.png (2752x1536)
+BEAST
+os
+WORKSPACE
+Overview
+MODULES
+CPU Scheduling
+Banker's Algorithm
+Paging
+Page Replacement
+Segmentation
+Fragmentation
+@ Disk Scheduling
+Multiprogramming
+LOCAL WORKSPACE
+All systems operational
+BEAST OS ul.o.o
+WORKSPACE
+Disk Scheduling
+OPERATING SYSTEM WORKBENCH
+Disk Scheduling
+COMMAND CENTER
+Analyze disk request queue optimization and seek head trajectory over time.
+ACTIVE PROCESS / INITIAL HEAD
+CYLINDER LIMIT
+TOTAL HEAD MOVEMENT
+236
+Cylinders
+System Time:
+AVG SEEK DISTANCE
+29.5
+OS Simulation Status : ACTIVE
+New Simulation
+53
+199
+Track Request Queue & Service Order
+FCFS )
+SSTF
+SCAN C-SCAN
+2D Disk Head Seek Trajectory
+Initial Position: 53
+LOOK ) C-LOOK
+[98, 183, 37, 122, 14, 124, 65, 67]
+0
+3
+o
+z
+o
+Service Order Sequence Flow
+53
+0
+2
+3
+4
+5
+6
+7
+8
+(14)
+25
+(53)
+(65)
+(67)
+(37)
+50
+(122V
+75
+100
+(124)
+125
+150
+175
+(183)
+199
+Cylinder Number
+Step-by-Step Seek Distance Calculation Table
+98
+122
+124
+Restart Simulation
+183
+Confirm
+Step
+2
+3
+4
+5
+6
+7
+8
+Sequence Transition
+Initial
+Previous Cyl
+Target Cyl
+53
+65
+67
+37
+14
+98
+122
+124
+65
+37
+14
+98
+122
+124
+183
+Calculated Distance
+(Absolute Difference)
+12
+2
+30
+23
+84
+24
+2
+59
+Total Distance Calculation: 12 + 2 + 30 + 23 + 84 + 24 + 2 + 59
+= 236 cylinders I Average Seek: 29.5 cylinders

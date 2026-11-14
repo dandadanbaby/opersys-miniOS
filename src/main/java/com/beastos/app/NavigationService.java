@@ -39,7 +39,11 @@ public class NavigationService {
     }
 
     private void registerDefaultFactories() {
-        viewFactories.put("Overview", DashboardView::new);
+        viewFactories.put("Overview", () -> {
+            DashboardView dv = new DashboardView();
+            dv.setNavigationService(this);
+            return dv;
+        });
         viewFactories.put("CPU Scheduling", CpuSchedulingView::new);
         viewFactories.put("Banker's Algorithm", BankerView::new);
         viewFactories.put("Paging", PagingView::new);

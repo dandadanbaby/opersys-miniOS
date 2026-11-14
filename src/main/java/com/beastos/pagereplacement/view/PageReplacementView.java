@@ -68,6 +68,9 @@ public class PageReplacementView extends ScrollPane {
         setFitToHeight(true);
         setHbarPolicy(ScrollBarPolicy.NEVER);
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
+
+        // Pre-run default simulation matching page-replacement.png
+        runSimulation();
     }
 
     // ----------------------------------------------------------------
@@ -99,12 +102,12 @@ public class PageReplacementView extends ScrollPane {
     //  Stat Cards
     // ----------------------------------------------------------------
     private HBox createStatCards() {
-        VBox c1 = buildStatCard("TOTAL REQUESTS", "⚙", totalReqValue);
-        VBox c2 = buildStatCard("PAGE HITS", "✓", hitsValue);
+        VBox c1 = buildStatCard("TOTAL REQUESTS", totalReqValue, "+15 this string", "#3b82f6");
+        VBox c2 = buildStatCard("PAGE HITS", hitsValue, "Frames retained", "#22c55e");
         hitsValue.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #22c55e;");
-        VBox c3 = buildStatCard("PAGE FAULTS", "✕", faultsValue);
+        VBox c3 = buildStatCard("PAGE FAULTS", faultsValue, "Miss penalty count", "#ef4444");
         faultsValue.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #ef4444;");
-        VBox c4 = buildStatCard("HIT RATIO", "📊", hitRatioValue);
+        VBox c4 = buildStatCard("HIT RATIO", hitRatioValue, "Efficiency rate", "#2dd4bf");
 
         HBox row = new HBox(14, c1, c2, c3, c4);
         row.setAlignment(Pos.TOP_LEFT);
@@ -115,18 +118,19 @@ public class PageReplacementView extends ScrollPane {
         return row;
     }
 
-    private VBox buildStatCard(String labelText, String icon, Label valueLabel) {
+    private VBox buildStatCard(String labelText, Label valueLabel, String descText, String accentColor) {
         Label cardLabel = new Label(labelText);
         cardLabel.getStyleClass().add("stat-card-label");
-        Label iconLabel = new Label(icon);
-        iconLabel.getStyleClass().add("stat-card-icon");
+        Region dot = new Region();
+        dot.setStyle("-fx-background-color: " + accentColor + "; -fx-background-radius: 4; -fx-min-width: 8; -fx-min-height: 8; -fx-max-width: 8; -fx-max-height: 8;");
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
-        HBox topRow = new HBox(cardLabel, sp, iconLabel);
+        HBox topRow = new HBox(cardLabel, sp, dot);
         topRow.setAlignment(Pos.CENTER);
         valueLabel.getStyleClass().add("stat-card-value");
-        Label descLabel = new Label(" ");
+        Label descLabel = new Label(descText);
         descLabel.getStyleClass().add("stat-card-description");
+        descLabel.setStyle("-fx-text-fill: " + accentColor + ";");
         VBox card = new VBox(4, topRow, valueLabel, descLabel);
         card.getStyleClass().add("stat-card");
         return card;

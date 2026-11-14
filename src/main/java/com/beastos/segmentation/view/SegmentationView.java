@@ -72,6 +72,10 @@ public class SegmentationView extends ScrollPane {
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
 
         rebuildSegmentTable();
+        // Load default target from segmentation.png
+        targetSegSpinner.getValueFactory().setValue(1);
+        offsetField.setText("320");
+        runTranslation();
     }
 
     private VBox createHeader() {
@@ -97,10 +101,10 @@ public class SegmentationView extends ScrollPane {
     }
 
     private HBox createStatCards() {
-        VBox c1 = buildStatCard("TOTAL SEGMENTS", "Seg", totalSegValue);
-        VBox c2 = buildStatCard("TARGET SEGMENT", "≡", targetSegValue);
-        VBox c3 = buildStatCard("VALIDATION", "✓", validationValue);
-        VBox c4 = buildStatCard("PHYSICAL ADDRESS", "📍", physAddrValue);
+        VBox c1 = buildStatCard("TOTAL SEGMENTS", totalSegValue, "Seg/count", "#3b82f6");
+        VBox c2 = buildStatCard("TARGET SEGMENT", targetSegValue, "Active evaluation", "#2dd4bf");
+        VBox c3 = buildStatCard("VALIDATION", validationValue, "Boundary check: pass", "#22c55e");
+        VBox c4 = buildStatCard("PHYSICAL ADDRESS", physAddrValue, "Calculated physical byte", "#2dd4bf");
 
         HBox row = new HBox(14, c1, c2, c3, c4);
         row.setAlignment(Pos.TOP_LEFT);
@@ -108,18 +112,19 @@ public class SegmentationView extends ScrollPane {
         return row;
     }
 
-    private VBox buildStatCard(String label, String icon, Label value) {
+    private VBox buildStatCard(String label, Label value, String descText, String accentColor) {
         Label l = new Label(label);
         l.getStyleClass().add("stat-card-label");
-        Label ic = new Label(icon);
-        ic.getStyleClass().add("stat-card-icon");
+        Region dot = new Region();
+        dot.setStyle("-fx-background-color: " + accentColor + "; -fx-background-radius: 4; -fx-min-width: 8; -fx-min-height: 8; -fx-max-width: 8; -fx-max-height: 8;");
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
-        HBox top = new HBox(l, sp, ic);
+        HBox top = new HBox(l, sp, dot);
         top.setAlignment(Pos.CENTER);
         value.getStyleClass().add("stat-card-value");
-        Label d = new Label(" ");
+        Label d = new Label(descText);
         d.getStyleClass().add("stat-card-description");
+        d.setStyle("-fx-text-fill: " + accentColor + ";");
         VBox card = new VBox(4, top, value, d);
         card.getStyleClass().add("stat-card");
         return card;

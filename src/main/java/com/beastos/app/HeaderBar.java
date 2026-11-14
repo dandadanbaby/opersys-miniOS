@@ -34,10 +34,10 @@ public class HeaderBar {
 
         // Breadcrumb
         breadcrumbPrefix = new Label("WORKSPACE  /  ");
-        breadcrumbPrefix.getStyleClass().add("header-breadcrumb");
+        breadcrumbPrefix.setStyle("-fx-text-fill: #64748b; -fx-font-size: 13px; -fx-font-weight: bold;");
 
         breadcrumbCurrent = new Label("Overview");
-        breadcrumbCurrent.getStyleClass().add("header-breadcrumb-current");
+        breadcrumbCurrent.setStyle("-fx-text-fill: #f8fafc; -fx-font-size: 13px; -fx-font-weight: bold;");
 
         HBox breadcrumb = new HBox(breadcrumbPrefix, breadcrumbCurrent);
         breadcrumb.setAlignment(Pos.CENTER_LEFT);
@@ -48,9 +48,9 @@ public class HeaderBar {
 
         // System Time pill
         Label timeLabel = new Label("System Time:");
-        timeLabel.getStyleClass().add("header-pill-label");
+        timeLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 12px;");
         timeValue = new Label("00:00:00");
-        timeValue.getStyleClass().add("header-pill-value");
+        timeValue.setStyle("-fx-text-fill: #2dd4bf; -fx-font-size: 12px; -fx-font-weight: bold; -fx-font-family: 'Consolas', 'Courier New', monospace;");
         HBox timePill = new HBox(6, timeLabel, timeValue);
         timePill.getStyleClass().add("header-pill");
         timePill.setAlignment(Pos.CENTER);
@@ -59,17 +59,25 @@ public class HeaderBar {
         startClock();
 
         // Simulation Status pill
+        Region greenDot = new Region();
+        greenDot.setStyle("-fx-background-color: #22c55e; -fx-background-radius: 4; -fx-min-width: 7; -fx-min-height: 7; -fx-max-width: 7; -fx-max-height: 7;");
         Label statusLabel = new Label("OS Simulation Status :");
-        statusLabel.getStyleClass().add("header-pill-label");
-        statusValue = new Label("IDLE");
-        statusValue.getStyleClass().add("header-pill-value");
-        HBox statusPill = new HBox(6, statusLabel, statusValue);
-        statusPill.getStyleClass().add("header-status-pill");
+        statusLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 12px;");
+        statusValue = new Label("ACTIVE");
+        statusValue.setStyle("-fx-text-fill: #2dd4bf; -fx-font-size: 12px; -fx-font-weight: bold;");
+        HBox statusPill = new HBox(6, greenDot, statusLabel, statusValue);
+        statusPill.getStyleClass().add("header-pill");
         statusPill.setAlignment(Pos.CENTER);
 
         // Bind status to session
         session.simulationStateProperty().addListener((obs, oldVal, newVal) -> {
-            statusValue.setText(newVal.getDisplayName());
+            String name = newVal.getDisplayName();
+            statusValue.setText(name.equals("RUNNING") ? "ACTIVE" : name);
+            if (newVal == SimulationState.IDLE) {
+                greenDot.setStyle("-fx-background-color: #64748b; -fx-background-radius: 4; -fx-min-width: 7; -fx-min-height: 7; -fx-max-width: 7; -fx-max-height: 7;");
+            } else {
+                greenDot.setStyle("-fx-background-color: #22c55e; -fx-background-radius: 4; -fx-min-width: 7; -fx-min-height: 7; -fx-max-width: 7; -fx-max-height: 7;");
+            }
         });
 
         // Assemble header

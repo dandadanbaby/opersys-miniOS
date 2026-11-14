@@ -1,0 +1,73 @@
+IMAGE: overview-dashboard.png (1920x1080)
+BEAST
+os
+WORKSPACE
+Overview
+MODULES
+CPU Scheduling
+Banker's Algorithm
+Paging
+Page Replacement
+Segmentation
+Fragmentation
+Disk Scheduling
+Multiprogramming
+LOCAL WORKSPACE
+All systems operational
+WORKSPACE
+I Overview
+System Time:
+OPERATING SYSTEM WORKBENCH
+System Overview
+COMMAND CENTER
+ACTIVE PROCESSES
+08
++2 this session
+OS Simulation Status .
+• ACTIVE
+New Simulation
+CPU UTILIZATION
+72.4
+% Within normal range
+Banker's Algorithm
+Safety Checks & resource matrices
+Fragmentation
+Mernory allocation strategies
+MEMORY IN USE
+61.8%
+4.9 out of 8GB
+SIMULATION COMPLETED
+24
+Across 8 modules
+CPU
+Round
+PROCESS
+p3
+execution timeline
+Robin • Time Quantum: 4ms
+EXECUTION ORDER
+Oms
+System Resources
+Live Utilization Overview
+72%
+CPU LOAD
+Paging
+Page tables address mapping
+Disk Scheduling
+Seek order & head movement
+CPU
+Memory
+Resources
+Page Replacement
+FIFO • LRu optimal
+Multiprogramming
+Process & resource sharing
+72.4%
+61.8%
+38.0%
+Simulation Models
+Choose a workspace module
+CPU Scheduling
+Scheduling prices & Gantt Charts
+Segmentation
+Segment tables & translation

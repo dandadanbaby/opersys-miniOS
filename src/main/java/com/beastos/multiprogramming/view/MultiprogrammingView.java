@@ -127,14 +127,14 @@ public class MultiprogrammingView extends ScrollPane {
     //  Stat Cards
     // ================================================================
     private HBox createStatCards() {
-        VBox c1 = buildStatCard("ACTIVE PROCESSES", "🔄", activeProcValue, activeProcSub, "#38bdf8");
+        VBox c1 = buildStatCard("ACTIVE PROCESSES", activeProcValue, activeProcSub, "#38bdf8");
         activeProcSub.setStyle("-fx-text-fill: #f59e0b; -fx-font-size: 11px;");
 
-        VBox c2 = buildStatCard("TOTAL SYSTEM RAM", "💾", totalRamValue, new Label("Static pool size"), "#3b82f6");
+        VBox c2 = buildStatCard("TOTAL SYSTEM RAM", totalRamValue, new Label("Static pool size"), "#3b82f6");
 
-        VBox c3 = buildStatCard("MEMORY ALLOCATED", "🗃", memAllocValue, new Label(" "), "#f59e0b");
+        VBox c3 = buildStatCard("MEMORY ALLOCATED", memAllocValue, new Label("Active allocations"), "#f59e0b");
 
-        VBox c4 = buildStatCard("MEMORY UTILIZATION", "✓", memUtilValue, memUtilSub, "#22c55e");
+        VBox c4 = buildStatCard("MEMORY UTILIZATION", memUtilValue, memUtilSub, "#22c55e");
         memUtilSub.setStyle("-fx-text-fill: #22c55e; -fx-font-size: 11px;");
 
         HBox row = new HBox(14, c1, c2, c3, c4);
@@ -146,20 +146,23 @@ public class MultiprogrammingView extends ScrollPane {
         return row;
     }
 
-    private VBox buildStatCard(String label, String icon, Label value, Label sub, String accentColor) {
+    private VBox buildStatCard(String label, Label value, Label sub, String accentColor) {
         Label l = new Label(label);
         l.getStyleClass().add("stat-card-label");
 
-        Label ic = new Label(icon);
-        ic.getStyleClass().add("stat-card-icon");
+        Region dot = new Region();
+        dot.setStyle("-fx-background-color: " + accentColor + "; -fx-background-radius: 4; -fx-min-width: 8; -fx-min-height: 8; -fx-max-width: 8; -fx-max-height: 8;");
 
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
-        HBox top = new HBox(l, sp, ic);
+        HBox top = new HBox(l, sp, dot);
         top.setAlignment(Pos.CENTER);
 
         value.getStyleClass().add("stat-card-value");
         sub.getStyleClass().add("stat-card-description");
+        if (sub.getStyle() == null || sub.getStyle().isBlank()) {
+            sub.setStyle("-fx-text-fill: " + accentColor + "; -fx-font-size: 11px;");
+        }
 
         VBox card = new VBox(4, top, value, sub);
         card.getStyleClass().add("stat-card");

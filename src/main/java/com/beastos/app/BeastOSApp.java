@@ -62,6 +62,14 @@ public class BeastOSApp extends Application {
         // Store nav service in scene properties for cross-component access
         scene.getProperties().put("navService", navService);
 
+        // Initialize session showcase defaults from overview-dashboard.png
+        com.beastos.common.SimulationSession session = com.beastos.common.SimulationSession.getInstance();
+        session.setActiveProcesses(8);
+        session.setCpuUtilization(72.4);
+        session.setMemoryInUse(4.94); // 4.94 out of 8.0 GB = 61.8%
+        session.setResourceUtilization(38.0);
+        session.setSimulationState(com.beastos.common.SimulationState.RUNNING);
+
         // Navigate to dashboard by default
         navService.navigateTo("Overview");
 

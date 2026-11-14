@@ -67,7 +67,20 @@ public class PagingView extends ScrollPane {
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
 
         rebuildPageTable();
-        for (int i = 0; i < 4; i++) addAddressRow();
+        // Load default frame mappings from paging.png
+        int[] defaultFrames = {5, 2, 9, 3, 12, 15, 0, 7};
+        for (int i = 0; i < defaultFrames.length && i < frameFields.length; i++) {
+            frameFields[i].setText(String.valueOf(defaultFrames[i]));
+        }
+
+        // Add 4 default benchmark addresses
+        String[] defaultAddrs = {"14348", "22440", "6200", "45056"};
+        for (String addr : defaultAddrs) {
+            addAddressRow(addr);
+        }
+
+        // Run translation on launch
+        runTranslation();
     }
 
     // ----------------------------------------------------------------
@@ -102,10 +115,10 @@ public class PagingView extends ScrollPane {
     //  Stat Cards
     // ----------------------------------------------------------------
     private HBox createStatCards() {
-        VBox c1 = buildStatCard("PAGE SIZE", "📄", pageSizeValue);
-        VBox c2 = buildStatCard("LOGICAL PAGES", "≡", logicalPagesValue);
-        VBox c3 = buildStatCard("MAPPED FRAME", "🔗", mappedFrameValue);
-        VBox c4 = buildStatCard("PHYSICAL ADDRESS", "📍", physicalAddrValue);
+        VBox c1 = buildStatCard("PAGE SIZE", pageSizeValue, "System block size", "#3b82f6");
+        VBox c2 = buildStatCard("LOGICAL PAGES", logicalPagesValue, "Process address space", "#2dd4bf");
+        VBox c3 = buildStatCard("MAPPED FRAME", mappedFrameValue, "Physical RAM target", "#22c55e");
+        VBox c4 = buildStatCard("PHYSICAL ADDRESS", physicalAddrValue, "Resolved byte address", "#2dd4bf");
 
         HBox row = new HBox(14, c1, c2, c3, c4);
         row.setAlignment(Pos.TOP_LEFT);
@@ -116,18 +129,19 @@ public class PagingView extends ScrollPane {
         return row;
     }
 
-    private VBox buildStatCard(String labelText, String icon, Label valueLabel) {
+    private VBox buildStatCard(String labelText, Label valueLabel, String descText, String accentColor) {
         Label cardLabel = new Label(labelText);
         cardLabel.getStyleClass().add("stat-card-label");
-        Label iconLabel = new Label(icon);
-        iconLabel.getStyleClass().add("stat-card-icon");
+        Region dot = new Region();
+        dot.setStyle("-fx-background-color: " + accentColor + "; -fx-background-radius: 4; -fx-min-width: 8; -fx-min-height: 8; -fx-max-width: 8; -fx-max-height: 8;");
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
-        HBox topRow = new HBox(cardLabel, sp, iconLabel);
+        HBox topRow = new HBox(cardLabel, sp, dot);
         topRow.setAlignment(Pos.CENTER);
         valueLabel.getStyleClass().add("stat-card-value");
-        Label descLabel = new Label(" ");
+        Label descLabel = new Label(descText);
         descLabel.getStyleClass().add("stat-card-description");
+        descLabel.setStyle("-fx-text-fill: " + accentColor + ";");
         VBox card = new VBox(4, topRow, valueLabel, descLabel);
         card.getStyleClass().add("stat-card");
         return card;
@@ -255,8 +269,12 @@ public class PagingView extends ScrollPane {
     }
 
     private void addAddressRow() {
+        addAddressRow("");
+    }
+
+    private void addAddressRow(String addr) {
         addressCounter++;
-        TextField addrField = new TextField();
+        TextField addrField = new TextField(addr);
         addrField.setPromptText("Logical address (e.g. 14348)");
         addrField.setPrefWidth(250);
 

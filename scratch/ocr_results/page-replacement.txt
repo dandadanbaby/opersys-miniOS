@@ -1,0 +1,143 @@
+IMAGE: page-replacement.png (2752x1536)
+BEAST
+os
+WORKSPACE
+Overview
+MODULES
+CPU Scheduling
+Banker's Algorithm
+Paging
+Page Replacement
+Segmentation
+Fragmentation
+@ Disk Scheduling
+Multiprogramming
+LOCAL WORKSPACE
+All systems operational
+BEAST OS vl.o-o
+WORKSPACE
+/ Page Replacement
+OPERATING SYSTEM WORKBENCH
+Page Replacement
+COMMAND CENTER
+Analyze memory page-to-frame evolution, hits, and faults over a page reference string.
+System Time:
+HIT RATIO
+40.0%
+OS Simulation Status : ACTIVE
+New Simulation
+TOTAL REQUESTS
+15
++15 this string
+PAGE HITS
+06
+PAGE FAULTS
+09
+Frame State Evolution (FIFO I LRIJ I Optimal)
+Column Page Requests (Ref String)
+PAGE
+FRAME O
+FRAME 1
+FRAME 2
+STATUS
+7
+1
+7
+FAULT
+7
+FAULT
+7
+1
+FAULT
+2
+2
+1
+FAULT
+2
+1
+HIT
+3
+2
+3
+1
+FAULT
+2
+3
+FAULT
+4
+4
+3
+FAULT
+2
+4
+2
+FAULT
+4
+2
+2
+3
+3
+FAULT FAULT
+3
+3
+3
+FAULT
+3
+3
+2
+HIT
+2
+3
+2
+HIT
+1
+1
+FAULT
+2
+2
+HIT
+Page Replacement Step-by-Step Table & Algorithm Comparison
+Step-by-Step State Transition Table
+Page
+7
+1
+2
+3
+4
+Frames State
+[7,
+[7,
+[2,
+[2,
+[2,
+[2,
+[4
+o,
+o,
+o,
+3,
+3,
+3
+-1]
+1]
+1]
+1]
+1]
+0]
+0]
+Status
+FAULT
+FAULT
+FAULT
+FAULT
+HIT
+FAULT
+FAULT
+FAULT
+Algorithm Comparison Tracker
+FIFO (First-ln, First-Out)
+LRU (Least Recently Used)
+Optimal Page Replacement
+40.0% Hit Ratio
+46.7% Hit Ratio
+53.3% Hit Ratio

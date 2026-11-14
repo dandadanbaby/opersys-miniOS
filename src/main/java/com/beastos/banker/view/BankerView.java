@@ -80,8 +80,9 @@ public class BankerView extends ScrollPane {
         setHbarPolicy(ScrollBarPolicy.NEVER);
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
 
-        // Build initial matrices
+        // Build initial matrices and run safety check
         rebuildMatrices();
+        runSafetyCheck();
     }
 
     // ----------------------------------------------------------------
@@ -116,13 +117,13 @@ public class BankerView extends ScrollPane {
     //  Stat Cards
     // ----------------------------------------------------------------
     private HBox createStatCards() {
-        VBox card1 = buildStatCard("PROCESSES", "⚙", processCountValue, "#22c55e");
-        VBox card2 = buildStatCard("RESOURCE TYPES", "≡", resourceCountValue, "#3b82f6");
-        VBox card3 = buildStatCard("SYSTEM STATUS", "✓", systemStatusValue, "#22c55e");
-        VBox card4 = buildStatCard("SAFE SEQUENCE", "→→", safeSequenceValue, "#2dd4bf");
+        VBox card1 = buildStatCard("PROCESSES", processCountValue, "#22c55e", "Active process count");
+        VBox card2 = buildStatCard("RESOURCE TYPES", resourceCountValue, "#3b82f6", "Vector dimension (A-C)");
+        VBox card3 = buildStatCard("SYSTEM STATUS", systemStatusValue, "#22c55e", "Deadlock avoidance");
+        VBox card4 = buildStatCard("SAFE SEQUENCE", safeSequenceValue, "#2dd4bf", "Valid dispatch order");
 
-        systemStatusValue.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #64748b;");
-        safeSequenceValue.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #64748b;");
+        systemStatusValue.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #22c55e;");
+        safeSequenceValue.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2dd4bf;");
         safeSequenceValue.setWrapText(true);
 
         HBox row = new HBox(14, card1, card2, card3, card4);
@@ -134,22 +135,28 @@ public class BankerView extends ScrollPane {
         return row;
     }
 
-    private VBox buildStatCard(String labelText, String icon, Label valueLabel, String accentColor) {
+    private VBox buildStatCard(String labelText, Label valueLabel, String accentColor, String descText) {
         Label cardLabel = new Label(labelText);
         cardLabel.getStyleClass().add("stat-card-label");
 
-        Label iconLabel = new Label(icon);
-        iconLabel.getStyleClass().add("stat-card-icon");
+        Region dot = new Region();
+        dot.setStyle("-fx-background-color: " + accentColor + "; -fx-background-radius: 4; -fx-min-width: 8; -fx-min-height: 8; -fx-max-width: 8; -fx-max-height: 8;");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox topRow = new HBox(cardLabel, spacer, iconLabel);
+        HBox topRow = new HBox(cardLabel, spacer, dot);
         topRow.setAlignment(Pos.CENTER);
 
         valueLabel.getStyleClass().add("stat-card-value");
 
-        Label descLabel = new Label(" ");
+        Label descLabel = new Label(descText);
         descLabel.getStyleClass().add("stat-card-description");
+        descLabel.setStyle("-fx-text-fill: " + accentColor + ";");
+
+        VBox card = new VBox(4, topRow, valueLabel, descLabel);
+        card.getStyleClass().add("stat-card");
+        return card;
+    }
 
         VBox card = new VBox(4, topRow, valueLabel, descLabel);
         card.getStyleClass().add("stat-card");

@@ -1,0 +1,96 @@
+IMAGE: paging.png (2752x1536)
+BEAST
+os
+WORKSPACE
+Overview
+MODULES
+CPU Scheduling
+Banker's Algorithm
+Paging
+Page Replacement
+Segmentation
+Fragmentation
+Disk Scheduling
+Multiprogramming
+LOCAL WORKSPACE
+All systems operational
+BEAST OS vl.o.o
+WORKSPACE
+/ Paging
+OPERATING SYSTEM WORKBENCH
+Paging
+COMMAND CENTER
+Analyze page-to-frame mapping and logical-to-physical address translation.
+MAPPED FRAME
+Frame 3
+System Time:
+PHYSICAL ADDRESS
+14,348
+OS Simulation Status : ACTIVE
+New Simulation
+PAGE SIZE
+4096 B
+LOGICAL PAGES
+08
+Page Map Table (Page No. -> Frame No.)
+Page Number
+Frame Number
+Frame 5
+Frame 2
+Frame 9
+Frame 3
+Frame 12
+Frame 15
+Frame 0
+Frame 7
+Logical-to-Physical Address Translation
+Flowchart and computational formula
+INPUT LOGICAL ADDRESS: Page 3, Offset 2060
+Page: 3
+Offset: 2060
+PAGE TABLE CHECK
+Formula: (3 * 4096) + 2060 = 14,348
+Offset 2060 < Page Size 4096 (VALID)
+Page Number
+3
+Index 3
+Frame Number
+PHYSICAL ADDRESS: 14,348
+Page Table
+Address Translation Verification Log
+Req ID Logical Address
+14348 (Page 3)
+22440 (Page 5)
+6200 (Page 1)
+45056 (Page 11)
+Page
+Offset
+No.
+3
+5
+1
+11
+2060
+1960
+2104
+100
+MAPPED
+FRAME
+Frame 3
+Frame 15
+Frame 2
+Frame -
+Physical
+Address
+14,348
+63,336
+6,198
+Validation Status
+SUCCESS / VALID
+SUCCESS / VALID
+SUCCESS / VALID
+Confirm
+Verification Complete: All translation boundary rules and exception
+tests matched manual mathematical verify results
+TRAP: Out of bounds (>7)
+Translation Verification count: 4 cases.

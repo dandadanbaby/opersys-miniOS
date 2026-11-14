@@ -76,7 +76,9 @@ public class DiskSchedulingView extends ScrollPane {
         directionUpCheck.setSelected(true);
         directionUpCheck.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 12px;");
 
-        drawEmptyTrajectory();
+        // Select SSTF matching disk-scheduling.png and run simulation
+        selectAlgorithm("SSTF");
+        runSimulation();
     }
 
     // ================================================================
@@ -108,11 +110,11 @@ public class DiskSchedulingView extends ScrollPane {
     //  Stat Cards
     // ================================================================
     private HBox createStatCards() {
-        VBox c1 = buildStatCard("ACTIVE PROCESS / INITIAL HEAD", "📍", headPosValue);
-        VBox c2 = buildStatCard("CYLINDER LIMIT", "📋", cylLimitValue);
-        VBox c3 = buildStatCard("TOTAL HEAD MOVEMENT", "✓", totalMoveValue);
+        VBox c1 = buildStatCard("ACTIVE PROCESS / INITIAL HEAD", headPosValue, "Starting cylinder", "#3b82f6");
+        VBox c2 = buildStatCard("CYLINDER LIMIT", cylLimitValue, "Max physical track", "#2dd4bf");
+        VBox c3 = buildStatCard("TOTAL HEAD MOVEMENT", totalMoveValue, "Cylinders traversed", "#22c55e");
         totalMoveSub.getStyleClass().add("stat-card-description");
-        VBox c4 = buildStatCard("AVG SEEK DISTANCE", "📈", avgSeekValue);
+        VBox c4 = buildStatCard("AVG SEEK DISTANCE", avgSeekValue, "Tracks per seek step", "#2dd4bf");
 
         HBox row = new HBox(14, c1, c2, c3, c4);
         row.setAlignment(Pos.TOP_LEFT);
@@ -120,18 +122,19 @@ public class DiskSchedulingView extends ScrollPane {
         return row;
     }
 
-    private VBox buildStatCard(String label, String icon, Label value) {
+    private VBox buildStatCard(String label, Label value, String descText, String accentColor) {
         Label l = new Label(label);
         l.getStyleClass().add("stat-card-label");
-        Label ic = new Label(icon);
-        ic.getStyleClass().add("stat-card-icon");
+        Region dot = new Region();
+        dot.setStyle("-fx-background-color: " + accentColor + "; -fx-background-radius: 4; -fx-min-width: 8; -fx-min-height: 8; -fx-max-width: 8; -fx-max-height: 8;");
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
-        HBox top = new HBox(l, sp, ic);
+        HBox top = new HBox(l, sp, dot);
         top.setAlignment(Pos.CENTER);
         value.getStyleClass().add("stat-card-value");
-        Label d = new Label(" ");
+        Label d = new Label(descText);
         d.getStyleClass().add("stat-card-description");
+        d.setStyle("-fx-text-fill: " + accentColor + ";");
         VBox card = new VBox(4, top, value, d);
         card.getStyleClass().add("stat-card");
         return card;

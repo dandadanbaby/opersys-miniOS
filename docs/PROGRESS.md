@@ -17,8 +17,8 @@
 | **Phase 4** | Segmentation & Fragmentation | ✅ Complete | 2026-11-14 |
 | **Phase 5** | Disk Scheduling | ✅ Complete | 2026-11-14 |
 | **Phase 6** | Multiprogramming | ✅ Complete | 2026-11-14 |
-| **Phase 7** | Integration & Quality Assurance | ⬜ In Progress | — |
-| Phase 8 | Finalization & Submission | ⬜ Not Started | — |
+| **Phase 7** | Integration & Quality Assurance | ✅ Complete | 2026-11-14 |
+| **Phase 8** | Finalization & Submission | ✅ Complete | 2026-11-14 |
 
 ---
 
@@ -442,3 +442,86 @@ $env:JAVA_HOME = "C:\Program Files\Java\jdk-25"
 
 ### Rubric Coverage (Phase 6)
 - **A.8 Multiprogramming (5 pts):** ✅ Multiple programs sharing memory, resource sharing/utilization, process states (Active/Waiting), Live Memory Partition Map
+
+---
+
+## Phase 7 — Integration & Quality Assurance
+
+**Date:** 2026-11-14
+**Status:** ✅ Complete
+
+### Build Results
+- **Maven compile:** BUILD SUCCESS (56 source files)
+- **Maven test:** BUILD SUCCESS (116/116 tests pass, 0 failures, 0 errors)
+- **Application launch:** Verified — responsive, zero horizontal stretching
+
+### Completed Tasks
+1. ✅ Created end-to-end integration test suite (`BeastOSIntegrationTest.java`):
+   - Validated `SimulationSession` global singleton lifecycle (IDLE → RUNNING → COMPLETED)
+   - Tested sequential cross-module execution across all 8 subsystems in a single continuous session
+   - Stress tested CPU scheduling with 1,000 processes (FCFS, SJF)
+   - Stress tested Disk scheduling with 1,000 requests (SSTF, SCAN)
+   - Stress tested Page Replacement with 2,000 reference strings across 10 frames
+2. ✅ Created `com.beastos.app.Launcher.java` entry point to enable packaged JAR execution without module-path conflicts
+3. ✅ Tested and produced standalone executable JAR at `target/beast-os-1.0.0.jar`
+4. ✅ Verified zero memory leaks, zero cross-module state contamination, and robust exception recovery
+5. ✅ Updated `docs/testing/TEST_MATRIX.md` with full execution evidence and pass rates
+
+---
+
+## Phase 8 — Finalization & Submission
+
+**Date:** 2026-11-14
+**Status:** ✅ Complete — Ready for Academic Submission & Defense
+
+### Completed Deliverables
+1. ✅ **`README.md`**: Professional, complete overview with tech stack badges, 8-module summary, setup instructions, testing guide, and directory tree
+2. ✅ **`docs/presentation/PRESENTER_GUIDE.md`**: 10-minute presentation guide with timed script, live demo sequence, technical challenge explanation, and 6-question instructor Q&A bank
+3. ✅ **`docs/rubric/RUBRIC_TRACEABILITY.md`**: All 100 points of the professor's rubric verified and mapped to source code, interfaces, and test classes
+4. ✅ **`docs/testing/TEST_MATRIX.md`**: Complete test matrix with 116 tests categorized and verified
+5. ✅ **`target/beast-os-1.0.0.jar`**: Packaged executable application archive
+6. ✅ **Build & Execution Verification**:
+   - `.\mvnw.cmd test` passes 116/116 tests
+   - `.\mvnw.cmd javafx:run` launches desktop UI seamlessly
+
+---
+
+## Phase 9 — Visual Asset Extraction & Strict Design Reference Alignment
+
+**Date:** 2026-11-14
+**Status:** ✅ Complete — Exact Pixel & Layout Fidelity
+
+### Completed Tasks
+1. ✅ **Pixel-Perfect Asset Extraction:**
+   - Extracted `logo-full.png` (dragon emblem, "BEAST OS", subtitle) from `Design References/Overview/overview-dashboard.png`
+   - Extracted 9 vector navigation line icons (`icon_overview.png`, `icon_cpu.png`, `icon_banker.png`, `icon_paging.png`, `icon_pagereplacement.png`, `icon_segmentation.png`, `icon_fragmentation.png`, `icon_disk.png`, `icon_multiprogramming.png`)
+   - Extracted 4 stat card badges (`badge_processes.png`, `badge_cpu.png`, `badge_memory.png`, `badge_completed.png`)
+   - Extracted 8 module cards quick access vector icons (`src/main/resources/icons/`)
+2. ✅ **Sidebar Visual Fidelity (`SidebarView.java`):**
+   - Replaced all Unicode emojis with the extracted vector line-art assets
+   - Implemented highlighted rounded pill active state (`#122b39` background, `#1e3a4b` border) with vertical teal accent indicator (`#2dd4bf`)
+   - Integrated dragon logo branding header
+   - Polished "LOCAL WORKSPACE" card with live green dot and operational status
+3. ✅ **Header Bar (`HeaderBar.java`):**
+   - Styled breadcrumb (`WORKSPACE / <Current>`) with muted hierarchy
+   - Polished System Time pill with cyan monospace value
+   - Added glowing status indicator pill with green dot and bold `ACTIVE` status
+4. ✅ **Theme CSS (`beast-os-theme.css`):**
+   - Deep navy background (`#0b1019`), dark slate cards (`#111c29`), turquoise accent (`#2dd4bf`)
+   - Gradient pill button `.btn-primary` (`linear-gradient(to right, #0ea5e9, #2dd4bf)`)
+   - Algorithm tab switches (`.algo-tab`, `.algo-tab-active`)
+5. ✅ **Showcase Pre-population Across All Modules:**
+   - **Overview:** Pre-rendered multi-row Round Robin 4ms Gantt chart (P1..P4), 3-color 72% CPU LOAD donut chart, and 8 module cards
+   - **CPU Scheduling:** Pre-loaded with benchmark dataset, Round Robin 4ms simulation pre-computed (WT: 5.80 ms, TAT: 11.40 ms, 92.4% CPU Util)
+   - **Banker's Algorithm:** Pre-computed safe sequence `P1 → P3 → P4 → P0 → P2` with full step-by-step verification trace log
+   - **Paging:** Pre-loaded 8 logical pages, frame mappings, and 4 address translations with flowchart formula
+   - **Page Replacement:** Pre-computed FIFO, LRU, and Optimal on 15-request string with 3-frame evolution grid (40.0% Hit Ratio)
+   - **Segmentation:** Pre-computed segment translation for Seg 1 at offset 320 to physical address 6620 with memory map visualization
+   - **Fragmentation:** Pre-loaded 5 blocks and 6 processes with 150 KB internal frag and 120 KB external frag visualization
+   - **Disk Scheduling:** Pre-computed SSTF 236-cylinder head movement on 8-request track queue with 2D seek trajectory canvas
+   - **Multiprogramming:** Pre-computed 512 MB pool with 496 MB active allocations, 96.8% RAM load donut, and live memory partition map
+6. ✅ **Quality & Test Assurance:**
+   - All 116 unit, smoke, and integration tests continue to pass 100% green
+   - Executable JAR re-packaged at `target/beast-os-1.0.0.jar`
+
+

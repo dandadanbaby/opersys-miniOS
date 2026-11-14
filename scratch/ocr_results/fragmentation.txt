@@ -1,0 +1,92 @@
+IMAGE: fragmentation.png (2752x1536)
+BEAST
+OS
+WORKSPACE
+Y'v Overview
+MODULES
+CPU Scheduling
+Banker's Algorithm
+Paging
+Page Replacement
+Segmentation
+Fragmentation
+Disk Scheduling
+Multiprogramming
+LOCAL WORKSPACE
+All systems operational
+BEAST OS vl.o.o
+WORKSPACE
+/ Fragmentation
+System Time:
+00:45:15
+OPERATING SYSTEM WORKBENCH
+Fragmentation
+COMMAND CENTER
+Simulate memory allocation and visualize internal or external fragmentation using dynamic workload datasets.
+OS Simulation Status : ACTIVE
+New Simulation
+MEMORY BLOCKS
+05
+Memory Allocation Table
+PROCESS ID
+PROCESS SIZE STATUS
+ALLOCATED PROCESSES
+05 / 06
+First-Fit
+BLOCK USED
+Block 1 (100 KB)
+Block 2 (150 KB)
+Block 3 (370 G)
+Block 4 (180 KB)
+None
+Block 5 (50 KB)
+01 in queue
+TOTAL INTERNAL FRAG
+150 KB
+EXTERNAL FRAG
+120 KB
+Best-Fit Worst-Fit
+INTERNAL FRAG
+Proportional Memory Block Partition
++ Add Process
+Allocated Space (Teal) Internal Frag (Amber)
+Free Blocks (Steel Blue)
+80 KB
+120 KB
+320 KB
+150 KB
+80 KB
+30 KB
+• Allocated
+• Allocated
+• Allocated
+• Allocated
+• Waiting
+• Allocated
+20 KB
+30 KB
+50 KB
+30 KB
+N/A
+20 KB
+2 (120 KB)
+4 (150 KB)
+Internal Frag (20 KB)
+Internal Frag (30 KB)
+Internal Frag (50 KB)
+Internal Frag (30 KB)
+Block 5 (50 KB)
+External Frag
+P6 30 KB)
+Internal Frag (20 KB)
+Unallocated Free space (120 KB)
+Fragmentation Analysis Summary
+ANALYSIS LOG
+[SUCCESS] Memory Blocks correctly validated with dynamic processes .
+[INFO] Total Internal Fragmentation is 150 KB (scattered across 5 active blocks) .
+[ALERT]
+External Fragmentation detected: 120 KB of unallocated fragmented free memory is available across
+free memory space, but Process P5 (80 KB) remains waiting due to non-contiguous placement .
+91.8% Allocated Space
+Internal Frag: 150 KB
+External Frag: 120 KB

@@ -1,0 +1,107 @@
+IMAGE: cpu-scheduling.png (2752x1536)
+BEAST
+WORKSPACE
+Overview
+MODULES
+CPU Scheduling
+Banker's Algorithm
+Paging
+Page Replacement
+Segmentation
+Fragmentation
+@ Disk Scheduling
+L/ 3 Multiprogramming
+LOCAL WORKSPACE
+All systems operational
+BEAST OS vl.o.o
+WORKSPACE
+CPU Scheduling
+OPERATING SYSTEM WORKBENCH
+CPU Scheduling
+COMMAND CENTER
+Analyze scheduling order and calculate relevant CPU process metrics over a timeline.
+System Time:
+CPU UTILIZATION
+92.4%
+OS Simulation Status : ACTIVE
+New Simulation
+ACTIVE PROCESSES
+05
++2 this session
+AVG WAITING TIME
+5.80
+ms
+AVG TURNAROUND TIME
+11.40
+ms
+Process Input Table
+(FCFS I SJF I Priority I Round Robin)
++ Add Process
+CPU execution timeline
+Visual Gantt Chart Scheduler
+FCFS
+SJF
+Priority
+Round Robin
+Config Time Quantum: 4ms
+Priority
+3
+1
+4
+2
+Confirm
+PROCESS
+EXECUTION ORDER
+Process ID
+Arrival Time
+1
+2
+3
+Burst Time
+8
+4
+9
+5
+Oms
+4
+8
+12
+16
+20
+Turnaround
+Time (TAT)
+20
+7
+26
+18
+24
+28
+Scheduling Calculation Results
+Process Arrival Time Burst Time Priority
+Completion
+Time
+Waiting
+Time (WT)
+2
+3
+Average Calculation:
+8
+4
+9
+5
+3
+1
+4
+2
+Average Waiting Time:
+20
+8
+28
+21
+5.80 ms
+Average Turnaround Time:
+12
+3
+17
+13
+11.40 ms
