@@ -1,0 +1,565 @@
+package com.beastos.cpu.view;
+
+import com.beastos.common.SimulationSession;
+import com.beastos.common.SimulationState;
+import com.beastos.cpu.engine.*;
+import com.beastos.cpu.model.Process;
+import com.beastos.cpu.model.SchedulingOutput;
+import com.beastos.cpu.model.SchedulingResult;
+import com.beastos.validation.InputValidator;
+import com.beastos.validation.ValidationResult;
+
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * CPU Scheduling module view for BEAST OS.
+ * Matches the supplied design reference: stat cards, algorithm tabs,
+ * editable process table, Gantt chart, and results table.
+ */
+public class CpuSchedulingView extends ScrollPane {
+
+    private static final SimulationSession session = SimulationSession.getInstance();
+
+    // Algorithm selection
+    private String selectedAlgorithm = "FCFS";
+    private final List<Button> algoTabs = new ArrayList<>();
+
+    // Input controls
+    private final VBox processInputRows = new VBox(6);
+    private final TextField quantumField = new TextField("4");
+    private final HBox quantumConfig = new HBox(8);
+    private int processCounter = 0;
+
+    // Stat card labels
+    private final Label activeProcessesValue = new Label("00");
+    private final Label avgWaitingValue = new Label("0.00");
+    private final Label avgTurnaroundValue = new Label("0.00");
+    private final Label cpuUtilValue = new Label("0.0%");
+
+    // Results
+    private final Canvas ganttCanvas = new Canvas(580, 220);
+    private final TableView<SchedulingResult> resultsTable = new TableView<>();
+    private final Label avgWtFooter = new Label("Average Waiting Time: 0.00 ms");
+    private final Label avgTatFooter = new Label("Average Turnaround Time: 0.00 ms");
+    private final Label errorLabel = new Label();
+
+    public CpuSchedulingView() {
+        VBox content = new VBox(20);
+        content.setPadding(new Insets(0));
+
+        content.getChildren().add(createHeader());
+        content.getChildren().add(createStatCards());
+        content.getChildren().add(createMainArea());
+
+        setContent(content);
+        setFitToWidth(true);
+        setFitToHeight(true);
+        setHbarPolicy(ScrollBarPolicy.NEVER);
+        setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
+
+        // Add 4 default process rows
+        for (int i = 0; i < 4; i++) addProcessRow();
+    }
+
+    // ----------------------------------------------------------------
+    //  Header
+    // ----------------------------------------------------------------
+    private VBox createHeader() {
+        Label tag = new Label("OPERATING SYSTEM WORKBENCH");
+        tag.getStyleClass().add("content-section-tag");
+
+        Label title = new Label("CPU Scheduling");
+        title.getStyleClass().add("content-title");
+
+        Label subtitle = new Label("COMMAND CENTER");
+        subtitle.getStyleClass().add("content-subtitle");
+
+        Label desc = new Label("Analyze scheduling order and calculate relevant CPU process metrics over a timeline.");
+        desc.getStyleClass().add("content-description");
+
+        Button newSimBtn = new Button("New Simulation");
+        newSimBtn.getStyleClass().add("btn-primary");
+        newSimBtn.setOnAction(e -> resetSimulation());
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox titleRow = new HBox(title, spacer, newSimBtn);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox header = new VBox(2, tag, titleRow, subtitle, desc);
+        return header;
+    }
+
+    // ----------------------------------------------------------------
+    //  Stat Cards
+    // ----------------------------------------------------------------
+    private HBox createStatCards() {
+        VBox card1 = buildStatCard("ACTIVE PROCESSES", "⚙", activeProcessesValue, "");
+        VBox card2 = buildStatCard("AVG WAITING TIME", "⏱", avgWaitingValue, "ms");
+        VBox card3 = buildStatCard("AVG TURNAROUND TIME", "⏳", avgTurnaroundValue, "ms");
+        VBox card4 = buildStatCard("CPU UTILIZATION", "📊", cpuUtilValue, "");
+
+        HBox row = new HBox(14, card1, card2, card3, card4);
+        row.setAlignment(Pos.TOP_LEFT);
+        HBox.setHgrow(card1, Priority.ALWAYS);
+        HBox.setHgrow(card2, Priority.ALWAYS);
+        HBox.setHgrow(card3, Priority.ALWAYS);
+        HBox.setHgrow(card4, Priority.ALWAYS);
+        return row;
+    }
+
+    private VBox buildStatCard(String labelText, String icon, Label valueLabel, String unitText) {
+        Label cardLabel = new Label(labelText);
+        cardLabel.getStyleClass().add("stat-card-label");
+
+        Label iconLabel = new Label(icon);
+        iconLabel.getStyleClass().add("stat-card-icon");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox topRow = new HBox(cardLabel, spacer, iconLabel);
+        topRow.setAlignment(Pos.CENTER);
+
+        valueLabel.getStyleClass().add("stat-card-value");
+
+        Label unitLabel = new Label(unitText);
+        unitLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #94a3b8; -fx-font-weight: bold;");
+
+        HBox valueRow = new HBox(4, valueLabel, unitLabel);
+        valueRow.setAlignment(Pos.BOTTOM_LEFT);
+
+        Label descLabel = new Label(" ");
+        descLabel.getStyleClass().add("stat-card-description");
+
+        VBox card = new VBox(4, topRow, valueRow, descLabel);
+        card.getStyleClass().add("stat-card");
+        return card;
+    }
+
+    // ----------------------------------------------------------------
+    //  Main two-panel area
+    // ----------------------------------------------------------------
+    private HBox createMainArea() {
+        VBox leftPanel = createInputPanel();
+        VBox rightPanel = createResultsPanel();
+
+        HBox.setHgrow(leftPanel, Priority.SOMETIMES);
+        HBox.setHgrow(rightPanel, Priority.ALWAYS);
+
+        leftPanel.setMinWidth(380);
+        leftPanel.setPrefWidth(440);
+        leftPanel.setMaxWidth(520);
+
+        HBox main = new HBox(14, leftPanel, rightPanel);
+        main.setAlignment(Pos.TOP_LEFT);
+        VBox.setVgrow(main, Priority.ALWAYS);
+        return main;
+    }
+
+    // ----------------------------------------------------------------
+    //  Left Panel — Process Input Table
+    // ----------------------------------------------------------------
+    private VBox createInputPanel() {
+        // Title with Add Process button
+        Label panelTitle = new Label("Process Input Table");
+        panelTitle.getStyleClass().add("panel-title");
+
+        Label algoHint = new Label("(FCFS | SJF | Priority | Round Robin)");
+        algoHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+
+        Button addBtn = new Button("+ Add Process");
+        addBtn.getStyleClass().add("btn-outline");
+        addBtn.setOnAction(e -> addProcessRow());
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox titleRow = new HBox(8, panelTitle, algoHint, spacer, addBtn);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
+
+        // Algorithm tabs
+        HBox tabBar = createAlgorithmTabs();
+
+        // Quantum config (only visible for RR)
+        Label configLabel = new Label("Config");
+        configLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8; -fx-font-weight: bold;");
+        Label qLabel = new Label("Time Quantum:");
+        qLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8;");
+        quantumField.setPrefWidth(60);
+        quantumField.setPromptText("4");
+        Label qUnit = new Label("ms");
+        qUnit.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+        quantumConfig.getChildren().addAll(configLabel, qLabel, quantumField, qUnit);
+        quantumConfig.setAlignment(Pos.CENTER_LEFT);
+        quantumConfig.setVisible(false);
+        quantumConfig.setManaged(false);
+
+        // Column headers
+        HBox colHeaders = createColumnHeaders();
+
+        // Process rows container
+        processInputRows.setPadding(new Insets(0));
+
+        // Scrollable input area
+        ScrollPane inputScroll = new ScrollPane(processInputRows);
+        inputScroll.setFitToWidth(true);
+        inputScroll.setPrefHeight(260);
+        inputScroll.setMaxHeight(400);
+        inputScroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+
+        // Error label
+        errorLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 12px; -fx-wrap-text: true;");
+        errorLabel.setWrapText(true);
+        errorLabel.setMaxWidth(Double.MAX_VALUE);
+
+        // Confirm button
+        Button confirmBtn = new Button("Confirm");
+        confirmBtn.getStyleClass().add("btn-accent");
+        confirmBtn.setMaxWidth(Double.MAX_VALUE);
+        confirmBtn.setOnAction(e -> runSimulation());
+
+        VBox panel = new VBox(10, titleRow, tabBar, quantumConfig, colHeaders,
+                inputScroll, errorLabel, confirmBtn);
+        panel.getStyleClass().add("panel");
+        VBox.setVgrow(inputScroll, Priority.ALWAYS);
+        return panel;
+    }
+
+    private HBox createAlgorithmTabs() {
+        String[] algorithms = {"FCFS", "SJF", "Round Robin", "Priority"};
+        HBox tabBar = new HBox(8);
+        tabBar.setAlignment(Pos.CENTER_LEFT);
+
+        for (String algo : algorithms) {
+            Button tab = new Button(algo);
+            tab.getStyleClass().add("algo-tab");
+            if (algo.equals(selectedAlgorithm)) {
+                tab.getStyleClass().add("algo-tab-active");
+            }
+            tab.setOnAction(e -> selectAlgorithm(algo));
+            algoTabs.add(tab);
+            tabBar.getChildren().add(tab);
+        }
+        return tabBar;
+    }
+
+    private void selectAlgorithm(String algo) {
+        selectedAlgorithm = algo;
+        for (Button tab : algoTabs) {
+            tab.getStyleClass().remove("algo-tab-active");
+            if (tab.getText().equals(algo)) {
+                tab.getStyleClass().add("algo-tab-active");
+            }
+        }
+        boolean isRR = "Round Robin".equals(algo);
+        quantumConfig.setVisible(isRR);
+        quantumConfig.setManaged(isRR);
+    }
+
+    private HBox createColumnHeaders() {
+        Label pidH = new Label("Process ID");
+        Label atH = new Label("Arrival Time");
+        Label btH = new Label("Burst Time");
+        Label prH = new Label("Priority");
+        Label delH = new Label("");
+
+        String headerStyle = "-fx-font-size: 12px; -fx-text-fill: #64748b; -fx-font-weight: bold;";
+        pidH.setStyle(headerStyle); pidH.setPrefWidth(90);
+        atH.setStyle(headerStyle);  atH.setPrefWidth(90);
+        btH.setStyle(headerStyle);  btH.setPrefWidth(90);
+        prH.setStyle(headerStyle);  prH.setPrefWidth(80);
+        delH.setPrefWidth(30);
+
+        HBox headers = new HBox(8, pidH, atH, btH, prH, delH);
+        headers.setAlignment(Pos.CENTER_LEFT);
+        headers.setPadding(new Insets(4, 0, 4, 0));
+        return headers;
+    }
+
+    private void addProcessRow() {
+        processCounter++;
+        String pid = "P" + processCounter;
+
+        TextField pidField = new TextField(pid);
+        pidField.setPrefWidth(90);
+
+        TextField atField = new TextField();
+        atField.setPrefWidth(90);
+        atField.setPromptText("0");
+
+        TextField btField = new TextField();
+        btField.setPrefWidth(90);
+        btField.setPromptText("1");
+
+        TextField prField = new TextField();
+        prField.setPrefWidth(80);
+        prField.setPromptText("0");
+
+        Button delBtn = new Button("✕");
+        delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #ef4444; " +
+                "-fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 2 6 2 6;");
+        HBox row = new HBox(8, pidField, atField, btField, prField, delBtn);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setUserData(new TextField[]{pidField, atField, btField, prField});
+
+        delBtn.setOnAction(e -> {
+            if (processInputRows.getChildren().size() > 1) {
+                processInputRows.getChildren().remove(row);
+            }
+        });
+
+        processInputRows.getChildren().add(row);
+    }
+
+    // ----------------------------------------------------------------
+    //  Right Panel — Gantt Chart + Results Table
+    // ----------------------------------------------------------------
+    private VBox createResultsPanel() {
+        // Gantt chart panel
+        Label ganttTitle = new Label("CPU execution timeline");
+        ganttTitle.getStyleClass().add("panel-title");
+        Label ganttSubtitle = new Label("Visual Gantt Chart Scheduler");
+        ganttSubtitle.getStyleClass().add("panel-subtitle");
+
+        GanttChartRenderer.render(ganttCanvas, null); // empty state
+
+        VBox ganttPanel = new VBox(8, ganttTitle, ganttSubtitle, ganttCanvas);
+        ganttPanel.getStyleClass().add("panel");
+        ganttPanel.setMinHeight(280);
+
+        // Make canvas responsive
+        ganttCanvas.widthProperty().bind(ganttPanel.widthProperty().subtract(40));
+        ganttCanvas.widthProperty().addListener((obs, o, n) -> {
+            // Re-render with last output if available
+            Object lastResult = ganttPanel.getUserData();
+            if (lastResult instanceof SchedulingOutput out) {
+                GanttChartRenderer.render(ganttCanvas, out.getGanttChart());
+            } else {
+                GanttChartRenderer.render(ganttCanvas, null);
+            }
+        });
+
+        // Results table
+        Label tableTitle = new Label("Scheduling Calculation Results");
+        tableTitle.getStyleClass().add("panel-title");
+
+        setupResultsTable();
+
+        // Footer averages
+        avgWtFooter.setStyle("-fx-font-size: 13px; -fx-text-fill: #2dd4bf; -fx-font-weight: bold;");
+        avgTatFooter.setStyle("-fx-font-size: 13px; -fx-text-fill: #2dd4bf; -fx-font-weight: bold;");
+
+        Label avgLabel = new Label("Average Calculation:");
+        avgLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #94a3b8;");
+
+        Label separator = new Label("|");
+        separator.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748b;");
+
+        HBox footer = new HBox(12, avgLabel, avgWtFooter, separator, avgTatFooter);
+        footer.setAlignment(Pos.CENTER_LEFT);
+        footer.setPadding(new Insets(8, 0, 0, 0));
+
+        VBox tablePanel = new VBox(8, tableTitle, resultsTable, footer);
+        tablePanel.getStyleClass().add("panel");
+
+        VBox rightPanel = new VBox(14, ganttPanel, tablePanel);
+        VBox.setVgrow(rightPanel, Priority.ALWAYS);
+        return rightPanel;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setupResultsTable() {
+        TableColumn<SchedulingResult, String> pidCol = new TableColumn<>("Process");
+        pidCol.setCellValueFactory(r -> new SimpleStringProperty(r.getValue().getPid()));
+        pidCol.setPrefWidth(70);
+
+        TableColumn<SchedulingResult, String> atCol = new TableColumn<>("Arrival Time");
+        atCol.setCellValueFactory(r -> new SimpleStringProperty(String.valueOf(r.getValue().getArrivalTime())));
+        atCol.setPrefWidth(85);
+
+        TableColumn<SchedulingResult, String> btCol = new TableColumn<>("Burst Time");
+        btCol.setCellValueFactory(r -> new SimpleStringProperty(String.valueOf(r.getValue().getBurstTime())));
+        btCol.setPrefWidth(75);
+
+        TableColumn<SchedulingResult, String> prCol = new TableColumn<>("Priority");
+        prCol.setCellValueFactory(r -> new SimpleStringProperty(String.valueOf(r.getValue().getPriority())));
+        prCol.setPrefWidth(65);
+
+        TableColumn<SchedulingResult, String> ctCol = new TableColumn<>("Completion\nTime");
+        ctCol.setCellValueFactory(r -> new SimpleStringProperty(String.valueOf(r.getValue().getCompletionTime())));
+        ctCol.setPrefWidth(90);
+
+        TableColumn<SchedulingResult, String> tatCol = new TableColumn<>("Turnaround\nTime (TAT)");
+        tatCol.setCellValueFactory(r -> new SimpleStringProperty(String.valueOf(r.getValue().getTurnaroundTime())));
+        tatCol.setPrefWidth(100);
+
+        TableColumn<SchedulingResult, String> wtCol = new TableColumn<>("Waiting\nTime (WT)");
+        wtCol.setCellValueFactory(r -> new SimpleStringProperty(String.valueOf(r.getValue().getWaitingTime())));
+        wtCol.setPrefWidth(85);
+
+        resultsTable.getColumns().addAll(pidCol, atCol, btCol, prCol, ctCol, tatCol, wtCol);
+        resultsTable.setPlaceholder(new Label("Run a simulation to see results"));
+        resultsTable.setPrefHeight(200);
+        resultsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+
+        // Style the process PID column with accent color
+        pidCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    setStyle("-fx-text-fill: #2dd4bf; -fx-font-weight: bold;");
+                }
+            }
+        });
+    }
+
+    // ----------------------------------------------------------------
+    //  Simulation Execution
+    // ----------------------------------------------------------------
+    private void runSimulation() {
+        errorLabel.setText("");
+
+        // Parse and validate input
+        List<Process> processes = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        List<String> pids = new ArrayList<>();
+
+        for (int i = 0; i < processInputRows.getChildren().size(); i++) {
+            HBox row = (HBox) processInputRows.getChildren().get(i);
+            TextField[] fields = (TextField[]) row.getUserData();
+            if (fields == null) continue;
+
+            String pid = fields[0].getText().trim();
+            String atStr = fields[1].getText().trim();
+            String btStr = fields[2].getText().trim();
+            String prStr = fields[3].getText().trim();
+
+            // Default empty fields
+            if (atStr.isEmpty()) atStr = "0";
+            if (btStr.isEmpty()) { errors.add("Row " + (i + 1) + ": Burst Time is required."); continue; }
+            if (prStr.isEmpty()) prStr = "0";
+            if (pid.isEmpty()) { errors.add("Row " + (i + 1) + ": Process ID is required."); continue; }
+
+            ValidationResult vPid = InputValidator.requireNonBlank(pid, "Process ID");
+            ValidationResult vAt = InputValidator.validateNonNegativeInt(atStr, "Arrival Time");
+            ValidationResult vBt = InputValidator.validatePositiveInt(btStr, "Burst Time");
+            ValidationResult vPr = InputValidator.validateNonNegativeInt(prStr, "Priority");
+
+            if (vPid.hasErrors()) { errors.addAll(vPid.getErrors()); continue; }
+            if (vAt.hasErrors()) { errors.addAll(vAt.getErrors()); continue; }
+            if (vBt.hasErrors()) { errors.addAll(vBt.getErrors()); continue; }
+            if (vPr.hasErrors()) { errors.addAll(vPr.getErrors()); continue; }
+
+            pids.add(pid);
+            processes.add(new Process(pid,
+                    Integer.parseInt(atStr),
+                    Integer.parseInt(btStr),
+                    Integer.parseInt(prStr)));
+        }
+
+        if (processes.isEmpty()) {
+            errorLabel.setText("At least 1 process is required.");
+            return;
+        }
+
+        // Check duplicate PIDs
+        ValidationResult dupCheck = InputValidator.validateNoDuplicates(pids, "Process IDs");
+        if (dupCheck.hasErrors()) {
+            errorLabel.setText(String.join("\n", dupCheck.getErrors()));
+            return;
+        }
+
+        if (!errors.isEmpty()) {
+            errorLabel.setText(String.join("\n", errors));
+            return;
+        }
+
+        // Validate quantum for RR
+        int quantum = 4;
+        if ("Round Robin".equals(selectedAlgorithm)) {
+            ValidationResult vQ = InputValidator.validatePositiveInt(
+                    quantumField.getText().trim(), "Time Quantum");
+            if (vQ.hasErrors()) {
+                errorLabel.setText(String.join("\n", vQ.getErrors()));
+                return;
+            }
+            quantum = Integer.parseInt(quantumField.getText().trim());
+        }
+
+        // Select scheduler
+        CpuScheduler scheduler = switch (selectedAlgorithm) {
+            case "FCFS" -> new FcfsScheduler();
+            case "SJF" -> new SjfScheduler();
+            case "Priority" -> new PriorityScheduler();
+            case "Round Robin" -> new RoundRobinScheduler(quantum);
+            default -> new FcfsScheduler();
+        };
+
+        // Run simulation
+        session.setSimulationState(SimulationState.RUNNING);
+        SchedulingOutput output = scheduler.schedule(processes);
+        session.setSimulationState(SimulationState.COMPLETED);
+
+        // Update stat cards
+        activeProcessesValue.setText(String.format("%02d", output.getProcessCount()));
+        avgWaitingValue.setText(String.format("%.2f", output.getAverageWaitingTime()));
+        avgTurnaroundValue.setText(String.format("%.2f", output.getAverageTurnaroundTime()));
+        cpuUtilValue.setText(String.format("%.1f%%", output.getCpuUtilization()));
+
+        // Update session
+        session.setActiveProcesses(output.getProcessCount());
+        session.setCpuUtilization(output.getCpuUtilization());
+        session.incrementSimulationsCompleted();
+        session.setLastCpuResult(output);
+
+        // Update Gantt chart
+        VBox ganttPanel = (VBox) ganttCanvas.getParent();
+        ganttPanel.setUserData(output);
+        GanttChartRenderer.render(ganttCanvas, output.getGanttChart());
+
+        // Update results table
+        ObservableList<SchedulingResult> data = FXCollections.observableArrayList(output.getResults());
+        resultsTable.setItems(data);
+
+        // Update footer
+        avgWtFooter.setText(String.format("Average Waiting Time: %.2f ms", output.getAverageWaitingTime()));
+        avgTatFooter.setText(String.format("Average Turnaround Time: %.2f ms", output.getAverageTurnaroundTime()));
+    }
+
+    private void resetSimulation() {
+        processInputRows.getChildren().clear();
+        processCounter = 0;
+        for (int i = 0; i < 4; i++) addProcessRow();
+
+        activeProcessesValue.setText("00");
+        avgWaitingValue.setText("0.00");
+        avgTurnaroundValue.setText("0.00");
+        cpuUtilValue.setText("0.0%");
+
+        resultsTable.getItems().clear();
+        GanttChartRenderer.render(ganttCanvas, null);
+        VBox ganttPanel = (VBox) ganttCanvas.getParent();
+        ganttPanel.setUserData(null);
+
+        avgWtFooter.setText("Average Waiting Time: 0.00 ms");
+        avgTatFooter.setText("Average Turnaround Time: 0.00 ms");
+        errorLabel.setText("");
+
+        session.setSimulationState(SimulationState.IDLE);
+    }
+}

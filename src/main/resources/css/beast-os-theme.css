@@ -1,0 +1,530 @@
+/* ============================================================
+   BEAST OS — Master Design System
+   Interactive Operating System Workbench
+   ============================================================ */
+
+/* --- Root Theme Variables (Looked-up Colors) --- */
+.root {
+    -fx-beast-bg:             #0d1117;
+    -fx-beast-sidebar:        #161b22;
+    -fx-beast-card:           #1c2333;
+    -fx-beast-card-hover:     #232d3f;
+    -fx-beast-accent:         #2dd4bf;
+    -fx-beast-accent-dark:    #14b8a6;
+    -fx-beast-amber:          #f59e0b;
+    -fx-beast-green:          #22c55e;
+    -fx-beast-red:            #ef4444;
+    -fx-beast-blue:           #3b82f6;
+    -fx-beast-text:           #f8fafc;
+    -fx-beast-text-secondary: #94a3b8;
+    -fx-beast-text-muted:     #64748b;
+    -fx-beast-border:         #334155;
+    -fx-beast-input:          #1e293b;
+    -fx-beast-input-border:   #475569;
+
+    -fx-background-color: -fx-beast-bg;
+    -fx-font-family: "Segoe UI", "SF Pro Display", system;
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-beast-text;
+}
+
+/* --- Scrollbar Styling --- */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+.scroll-bar .thumb {
+    -fx-background-color: -fx-beast-border;
+    -fx-background-radius: 4;
+    -fx-background-insets: 2;
+}
+.scroll-bar .thumb:hover {
+    -fx-background-color: -fx-beast-text-muted;
+}
+.scroll-bar .track {
+    -fx-background-color: transparent;
+}
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+    -fx-background-color: -fx-beast-sidebar;
+    -fx-border-color: -fx-beast-border;
+    -fx-border-width: 0 1 0 0;
+    -fx-padding: 0;
+    -fx-min-width: 210;
+    -fx-pref-width: 210;
+    -fx-max-width: 210;
+}
+
+.sidebar-logo-area {
+    -fx-padding: 20 16 20 16;
+}
+
+.sidebar-logo-text {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-beast-text;
+}
+
+.sidebar-logo-sub {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-beast-accent;
+}
+
+.sidebar-section-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-beast-text-muted;
+    -fx-padding: 16 16 6 16;
+    -fx-letter-spacing: 1;
+}
+
+.sidebar-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-beast-text-secondary;
+    -fx-padding: 10 16 10 16;
+    -fx-cursor: hand;
+    -fx-background-radius: 0;
+    -fx-border-width: 0 0 0 3;
+    -fx-border-color: transparent;
+    -fx-font-size: 13px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-max-width: 10000;
+    -fx-graphic-text-gap: 10;
+}
+
+.sidebar-item:hover {
+    -fx-background-color: derive(-fx-beast-sidebar, 20%);
+    -fx-text-fill: -fx-beast-text;
+}
+
+.sidebar-item-active {
+    -fx-background-color: derive(-fx-beast-accent, -80%);
+    -fx-text-fill: -fx-beast-text;
+    -fx-border-color: -fx-beast-accent;
+    -fx-font-weight: bold;
+}
+
+.sidebar-status-panel {
+    -fx-background-color: -fx-beast-card;
+    -fx-background-radius: 8;
+    -fx-border-color: -fx-beast-border;
+    -fx-border-radius: 8;
+    -fx-padding: 12;
+    -fx-spacing: 4;
+}
+
+.sidebar-status-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-beast-text;
+}
+
+.sidebar-status-dot {
+    -fx-background-color: -fx-beast-green;
+    -fx-background-radius: 5;
+    -fx-min-width: 8;
+    -fx-min-height: 8;
+    -fx-max-width: 8;
+    -fx-max-height: 8;
+}
+
+.sidebar-status-text {
+    -fx-font-size: 11px;
+    -fx-text-fill: -fx-beast-text-secondary;
+}
+
+.sidebar-version {
+    -fx-font-size: 11px;
+    -fx-text-fill: -fx-beast-text-muted;
+    -fx-padding: 4 0 0 0;
+}
+
+/* --- Header Bar --- */
+.header-bar {
+    -fx-background-color: -fx-beast-bg;
+    -fx-border-color: -fx-beast-border;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 12 24 12 24;
+    -fx-alignment: CENTER;
+}
+
+.header-breadcrumb {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-beast-text-secondary;
+}
+
+.header-breadcrumb-current {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-beast-text;
+    -fx-font-weight: bold;
+}
+
+.header-pill {
+    -fx-background-color: -fx-beast-card;
+    -fx-background-radius: 20;
+    -fx-border-color: -fx-beast-border;
+    -fx-border-radius: 20;
+    -fx-padding: 6 14 6 14;
+    -fx-font-size: 12px;
+}
+
+.header-pill-label {
+    -fx-text-fill: -fx-beast-text-secondary;
+    -fx-font-size: 12px;
+}
+
+.header-pill-value {
+    -fx-text-fill: -fx-beast-accent;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.header-status-pill {
+    -fx-background-color: transparent;
+    -fx-background-radius: 20;
+    -fx-border-color: -fx-beast-border;
+    -fx-border-radius: 20;
+    -fx-padding: 6 14 6 14;
+    -fx-font-size: 12px;
+}
+
+/* --- Content Area --- */
+.content-area {
+    -fx-background-color: -fx-beast-bg;
+    -fx-padding: 24 28 24 28;
+    -fx-min-width: 0;
+}
+
+.content-section-tag {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-beast-accent;
+}
+
+.content-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-beast-text;
+}
+
+.content-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-beast-text-secondary;
+    -fx-font-weight: bold;
+}
+
+.content-description {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-beast-text-secondary;
+}
+
+/* --- Stat Cards --- */
+.stat-card {
+    -fx-background-color: -fx-beast-card;
+    -fx-background-radius: 10;
+    -fx-border-color: -fx-beast-border;
+    -fx-border-radius: 10;
+    -fx-padding: 18 20 18 20;
+    -fx-spacing: 4;
+    -fx-min-width: 0;
+}
+
+.stat-card-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-beast-text-muted;
+}
+
+.stat-card-value {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-beast-text;
+}
+
+.stat-card-description {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-beast-green;
+}
+
+.stat-card-icon {
+    -fx-font-size: 18px;
+    -fx-text-fill: -fx-beast-text-muted;
+}
+
+/* --- Panels --- */
+.panel {
+    -fx-background-color: -fx-beast-card;
+    -fx-background-radius: 10;
+    -fx-border-color: -fx-beast-border;
+    -fx-border-radius: 10;
+    -fx-padding: 20;
+    -fx-min-width: 0;
+}
+
+.panel-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-beast-text;
+}
+
+.panel-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-beast-text-secondary;
+}
+
+/* --- Module Cards --- */
+.module-card {
+    -fx-background-color: -fx-beast-card;
+    -fx-background-radius: 10;
+    -fx-border-color: -fx-beast-border;
+    -fx-border-radius: 10;
+    -fx-padding: 18;
+    -fx-cursor: hand;
+    -fx-min-width: 0;
+}
+
+.module-card:hover {
+    -fx-background-color: -fx-beast-card-hover;
+    -fx-border-color: -fx-beast-accent;
+}
+
+.module-card-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-beast-text;
+}
+
+.module-card-desc {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-beast-text-secondary;
+}
+
+.module-card-icon {
+    -fx-font-size: 20px;
+    -fx-text-fill: -fx-beast-accent;
+}
+
+.module-card-arrow {
+    -fx-font-size: 16px;
+    -fx-text-fill: -fx-beast-accent;
+}
+
+/* --- Buttons --- */
+.btn-primary {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-beast-accent;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-text-fill: -fx-beast-accent;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 20 8 20;
+    -fx-cursor: hand;
+}
+
+.btn-primary:hover {
+    -fx-background-color: derive(-fx-beast-accent, -80%);
+}
+
+.btn-accent {
+    -fx-background-color: -fx-beast-accent;
+    -fx-background-radius: 6;
+    -fx-text-fill: #0d1117;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 16 8 16;
+    -fx-cursor: hand;
+}
+
+.btn-accent:hover {
+    -fx-background-color: derive(-fx-beast-accent, -15%);
+}
+
+.btn-outline {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-beast-border;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-text-fill: -fx-beast-text-secondary;
+    -fx-font-size: 12px;
+    -fx-padding: 6 14 6 14;
+    -fx-cursor: hand;
+}
+
+.btn-outline:hover {
+    -fx-background-color: -fx-beast-card;
+    -fx-text-fill: -fx-beast-text;
+}
+
+/* --- Algorithm Tabs --- */
+.algo-tab {
+    -fx-background-color: -fx-beast-card;
+    -fx-background-radius: 6;
+    -fx-border-color: -fx-beast-border;
+    -fx-border-radius: 6;
+    -fx-text-fill: -fx-beast-text-secondary;
+    -fx-font-size: 12px;
+    -fx-padding: 6 14 6 14;
+    -fx-cursor: hand;
+}
+
+.algo-tab:hover {
+    -fx-text-fill: -fx-beast-text;
+    -fx-background-color: -fx-beast-card-hover;
+}
+
+.algo-tab-active {
+    -fx-background-color: -fx-beast-accent;
+    -fx-text-fill: #0d1117;
+    -fx-font-weight: bold;
+}
+
+/* --- Tables --- */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: -fx-beast-card;
+}
+
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-beast-border;
+    -fx-border-width: 0 0 1 0;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: -fx-beast-text-muted;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.table-view .table-row-cell {
+    -fx-background-color: transparent;
+    -fx-border-color: derive(-fx-beast-border, -20%);
+    -fx-border-width: 0 0 1 0;
+}
+
+.table-view .table-row-cell:hover {
+    -fx-background-color: derive(-fx-beast-card, 10%);
+}
+
+.table-view .table-cell {
+    -fx-text-fill: -fx-beast-text;
+    -fx-font-size: 13px;
+    -fx-padding: 8 10 8 10;
+}
+
+/* --- Text Fields --- */
+.text-field, .text-area {
+    -fx-background-color: -fx-beast-input;
+    -fx-border-color: -fx-beast-input-border;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-text-fill: -fx-beast-text;
+    -fx-prompt-text-fill: -fx-beast-text-muted;
+    -fx-font-size: 13px;
+    -fx-padding: 8 12 8 12;
+}
+
+.text-field:focused, .text-area:focused {
+    -fx-border-color: -fx-beast-accent;
+}
+
+/* --- Spinners --- */
+.spinner {
+    -fx-background-color: -fx-beast-input;
+    -fx-border-color: -fx-beast-input-border;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+/* --- Labels --- */
+.label {
+    -fx-text-fill: -fx-beast-text;
+}
+
+/* --- Tooltip --- */
+.tooltip {
+    -fx-background-color: -fx-beast-card;
+    -fx-text-fill: -fx-beast-text;
+    -fx-border-color: -fx-beast-border;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-font-size: 12px;
+    -fx-padding: 6 10 6 10;
+}
+
+/* --- Module View Common --- */
+.module-header {
+    -fx-spacing: 2;
+}
+
+.module-empty-state {
+    -fx-alignment: CENTER;
+    -fx-spacing: 12;
+    -fx-padding: 40;
+}
+
+.module-empty-icon {
+    -fx-font-size: 48px;
+    -fx-text-fill: -fx-beast-text-muted;
+}
+
+.module-empty-text {
+    -fx-font-size: 16px;
+    -fx-text-fill: -fx-beast-text-secondary;
+}
+
+/* --- Badge / Status Indicators --- */
+.badge-success {
+    -fx-background-color: derive(-fx-beast-green, -70%);
+    -fx-background-radius: 4;
+    -fx-text-fill: -fx-beast-green;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 8 2 8;
+}
+
+.badge-fault {
+    -fx-background-color: derive(-fx-beast-red, -70%);
+    -fx-background-radius: 4;
+    -fx-text-fill: -fx-beast-red;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 8 2 8;
+}
+
+.badge-warning {
+    -fx-background-color: derive(-fx-beast-amber, -70%);
+    -fx-background-radius: 4;
+    -fx-text-fill: -fx-beast-amber;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 8 2 8;
+}
+
+/* --- Separator --- */
+.separator .line {
+    -fx-border-color: -fx-beast-border;
+}
