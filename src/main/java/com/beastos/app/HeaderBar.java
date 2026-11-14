@@ -105,4 +105,8 @@ public class HeaderBar {
     public Node getView() {
         return view;
     }
+
+    public NavigationService getNavService() {
+        return navService;
+    }
 }

@@ -5,7 +5,6 @@ import com.beastos.common.SimulationState;
 import com.beastos.paging.engine.PagingEngine;
 import com.beastos.paging.model.PagingOutput;
 import com.beastos.paging.model.TranslationResult;
-import com.beastos.validation.InputValidator;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -37,7 +36,6 @@ public class PagingView extends ScrollPane {
 
     // Logical address input
     private final VBox addressRows = new VBox(4);
-    private int addressCounter = 0;
 
     // Stat cards
     private final Label pageSizeValue = new Label("4096 B");
@@ -273,7 +271,6 @@ public class PagingView extends ScrollPane {
     }
 
     private void addAddressRow(String addr) {
-        addressCounter++;
         TextField addrField = new TextField(addr);
         addrField.setPromptText("Logical address (e.g. 14348)");
         addrField.setPrefWidth(250);
@@ -526,7 +523,6 @@ public class PagingView extends ScrollPane {
     private void resetAll() {
         rebuildPageTable();
         addressRows.getChildren().clear();
-        addressCounter = 0;
         for (int i = 0; i < 4; i++) addAddressRow();
         verificationTable.getItems().clear();
         translationFlowchart.getChildren().clear();

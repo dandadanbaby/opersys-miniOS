@@ -2,7 +2,6 @@ package com.beastos.pagereplacement;
 
 import com.beastos.pagereplacement.engine.*;
 import com.beastos.pagereplacement.model.PageReplacementOutput;
-import com.beastos.pagereplacement.model.PageReplacementStep;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

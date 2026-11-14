@@ -21,9 +21,7 @@ public final class GanttChartRenderer {
             Color.web("#3b82f6"), Color.web("#a855f7"),
             Color.web("#ef4444"), Color.web("#ec4899")
     };
-    private static final Color IDLE_COLOR = Color.web("#334155");
     private static final Color TEXT_PRIMARY = Color.web("#f8fafc");
-    private static final Color TEXT_SECONDARY = Color.web("#94a3b8");
     private static final Color TEXT_MUTED = Color.web("#64748b");
     private static final Color GRID_COLOR = Color.web("#334155");
     private static final Color ARROW_COLOR = Color.web("#94a3b8");
@@ -83,9 +81,6 @@ public final class GanttChartRenderer {
         int numRows = processIds.size();
         double chartWidth = w - LEFT_MARGIN - RIGHT_MARGIN;
         double chartHeight = numRows * (ROW_HEIGHT + ROW_GAP);
-
-        // Adjust canvas height if needed (caller should handle this ideally)
-        double neededHeight = TOP_MARGIN + chartHeight + BOTTOM_MARGIN;
 
         // Draw column headers
         gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));

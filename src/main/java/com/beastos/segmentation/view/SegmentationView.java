@@ -6,7 +6,6 @@ import com.beastos.segmentation.engine.SegmentationEngine;
 import com.beastos.segmentation.model.Segment;
 import com.beastos.segmentation.model.SegmentTranslationResult;
 
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;

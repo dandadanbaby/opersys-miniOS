@@ -1,6 +1,5 @@
 package com.beastos.multiprogramming.view;
 
-import com.beastos.common.FormatUtils;
 import com.beastos.common.SimulationSession;
 import com.beastos.common.SimulationState;
 import com.beastos.multiprogramming.engine.MultiprogrammingEngine;
@@ -482,7 +481,6 @@ public class MultiprogrammingView extends ScrollPane {
         double cx = w / 2;
         double cy = h / 2;
         double radius = Math.min(w, h) / 2 - 10;
-        double innerRadius = radius - 18;
 
         // Background track (dark slate)
         gc.setStroke(Color.web("#1e293b"));

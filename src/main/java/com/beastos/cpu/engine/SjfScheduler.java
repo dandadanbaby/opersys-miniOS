@@ -20,7 +20,6 @@ public class SjfScheduler implements CpuScheduler {
         List<Process> remaining = new ArrayList<>(processes);
         List<GanttEntry> gantt = new ArrayList<>();
         List<SchedulingResult> results = new ArrayList<>();
-        Map<String, Integer> responseTimeMap = new HashMap<>();
         int currentTime = 0;
 
         while (!remaining.isEmpty()) {

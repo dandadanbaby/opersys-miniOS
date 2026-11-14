@@ -1,7 +1,6 @@
 package com.beastos.pagereplacement.model;
 
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Represents one step of a page replacement simulation.
