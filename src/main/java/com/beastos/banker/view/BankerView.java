@@ -82,7 +82,36 @@ public class BankerView extends ScrollPane {
 
         // Build initial matrices and run safety check
         rebuildMatrices();
+        loadDefaultData();
         runSafetyCheck();
+    }
+
+    private void loadDefaultData() {
+        int[][] defaultAlloc = {
+            {0, 1, 0},
+            {2, 0, 0},
+            {3, 0, 2},
+            {2, 1, 1},
+            {0, 0, 2}
+        };
+        int[][] defaultMax = {
+            {7, 5, 3},
+            {3, 2, 2},
+            {9, 0, 2},
+            {2, 2, 2},
+            {4, 3, 3}
+        };
+        int[] defaultAvail = {3, 3, 2};
+
+        for (int i = 0; i < Math.min(numProcesses, defaultAlloc.length); i++) {
+            for (int j = 0; j < Math.min(numResources, 3); j++) {
+                allocationFields[i][j].setText(String.valueOf(defaultAlloc[i][j]));
+                maxFields[i][j].setText(String.valueOf(defaultMax[i][j]));
+            }
+        }
+        for (int j = 0; j < Math.min(numResources, 3); j++) {
+            availableFields[j].setText(String.valueOf(defaultAvail[j]));
+        }
     }
 
     // ----------------------------------------------------------------
@@ -152,11 +181,6 @@ public class BankerView extends ScrollPane {
         Label descLabel = new Label(descText);
         descLabel.getStyleClass().add("stat-card-description");
         descLabel.setStyle("-fx-text-fill: " + accentColor + ";");
-
-        VBox card = new VBox(4, topRow, valueLabel, descLabel);
-        card.getStyleClass().add("stat-card");
-        return card;
-    }
 
         VBox card = new VBox(4, topRow, valueLabel, descLabel);
         card.getStyleClass().add("stat-card");

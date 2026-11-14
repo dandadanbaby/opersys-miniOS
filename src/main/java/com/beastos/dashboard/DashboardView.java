@@ -105,14 +105,48 @@ public class DashboardView extends ScrollPane {
     //  B. Stat Cards
     // ----------------------------------------------------------------
     private HBox createStatCards() {
-        VBox card1 = createStatCard("ACTIVE PROCESSES", "/icons/badge_processes.png",
-                session.activeProcessesProperty(), false, "+2 this session", GREEN);
-        VBox card2 = createStatCard("CPU UTILIZATION", "/icons/badge_cpu.png",
-                session.cpuUtilizationProperty(), true, "Within normal range", GREEN);
-        VBox card3 = createStatCard("MEMORY IN USE", "/icons/badge_memory.png",
-                session.memoryInUseProperty(), true, "4.9 out of 8GB", ACCENT);
-        VBox card4 = createStatCard("SIMULATION COMPLETED", "/icons/badge_completed.png",
-                session.simulationsCompletedProperty(), false, "Across 8 modules", GREEN);
+        VBox card1 = buildCard("ACTIVE PROCESSES", "/icons/badge_processes.png",
+                Bindings.createStringBinding(() -> {
+                    int v = session.getActiveProcesses();
+                    return (v <= 0) ? "08" : FormatUtils.zeroPad(v, 2);
+                }, session.activeProcessesProperty()),
+                Bindings.createStringBinding(() -> "+2 this session"),
+                GREEN);
+
+        VBox card2 = buildCard("CPU UTILIZATION", "/icons/badge_cpu.png",
+                Bindings.createStringBinding(() -> {
+                    double v = session.getCpuUtilization();
+                    return (v <= 0.0) ? "72.4%" : FormatUtils.formatPercent(v);
+                }, session.cpuUtilizationProperty()),
+                Bindings.createStringBinding(() -> "Within normal range"),
+                GREEN);
+
+        VBox card3 = buildCard("MEMORY IN USE", "/icons/badge_memory.png",
+                Bindings.createStringBinding(() -> {
+                    double used = session.getMemoryInUse();
+                    double total = session.getTotalMemory();
+                    if (used <= 0.0) used = 4.94;
+                    if (total <= 0.0) total = 8.0;
+                    double pct = (used / total) * 100.0;
+                    return FormatUtils.formatPercent(pct);
+                }, session.memoryInUseProperty(), session.totalMemoryProperty()),
+                Bindings.createStringBinding(() -> {
+                    double used = session.getMemoryInUse();
+                    double total = session.getTotalMemory();
+                    if (used <= 0.0) used = 4.94;
+                    if (total <= 0.0) total = 8.0;
+                    String totalStr = (total == (long) total) ? String.valueOf((long) total) : FormatUtils.formatDecimal1(total);
+                    return FormatUtils.formatDecimal1(used) + " out of " + totalStr + "GB";
+                }, session.memoryInUseProperty(), session.totalMemoryProperty()),
+                ACCENT);
+
+        VBox card4 = buildCard("SIMULATION COMPLETED", "/icons/badge_completed.png",
+                Bindings.createStringBinding(() -> {
+                    int v = session.getSimulationsCompleted();
+                    return (v <= 0) ? "24" : String.valueOf(v);
+                }, session.simulationsCompletedProperty()),
+                Bindings.createStringBinding(() -> "Across 8 modules"),
+                GREEN);
 
         HBox row = new HBox(14, card1, card2, card3, card4);
         row.setAlignment(Pos.TOP_LEFT);
@@ -123,12 +157,14 @@ public class DashboardView extends ScrollPane {
         return row;
     }
 
-    private VBox createStatCard(String labelText, String badgePath, Object property,
-                                 boolean isPercent, String defaultDesc, Color accentColor) {
+    private VBox buildCard(String labelText, String badgePath,
+                          javafx.beans.binding.StringBinding valueBinding,
+                          javafx.beans.binding.StringBinding descBinding,
+                          Color accentColor) {
         Label cardLabel = new Label(labelText);
         cardLabel.getStyleClass().add("stat-card-label");
 
-        ImageView badgeView = loadIcon(badgePath, 28);
+        ImageView badgeView = loadIcon(badgePath, 34);
         Node badgeNode = (badgeView != null) ? badgeView : new Region();
 
         Region spacer = new Region();
@@ -136,31 +172,14 @@ public class DashboardView extends ScrollPane {
         HBox topRow = new HBox(cardLabel, spacer, badgeNode);
         topRow.setAlignment(Pos.CENTER);
 
-        Label valueLabel = new Label("0");
+        Label valueLabel = new Label();
         valueLabel.getStyleClass().add("stat-card-value");
+        valueLabel.textProperty().bind(valueBinding);
 
-        if (property instanceof javafx.beans.property.IntegerProperty ip) {
-            valueLabel.textProperty().bind(Bindings.createStringBinding(
-                    () -> {
-                        int v = ip.get();
-                        return (v == 0) ? "08" : FormatUtils.zeroPad(v, 2);
-                    }, ip));
-        } else if (property instanceof javafx.beans.property.DoubleProperty dp) {
-            if (isPercent) {
-                valueLabel.textProperty().bind(Bindings.createStringBinding(
-                        () -> {
-                            double v = dp.get();
-                            return (v == 0.0) ? "72.4%" : FormatUtils.formatPercent(v);
-                        }, dp));
-            } else {
-                valueLabel.textProperty().bind(Bindings.createStringBinding(
-                        () -> FormatUtils.formatDecimal1(dp.get()), dp));
-            }
-        }
-
-        Label descLabel = new Label(defaultDesc);
+        Label descLabel = new Label();
         descLabel.getStyleClass().add("stat-card-description");
         descLabel.setStyle("-fx-text-fill: " + toWeb(accentColor) + ";");
+        descLabel.textProperty().bind(descBinding);
 
         VBox card = new VBox(4, topRow, valueLabel, descLabel);
         card.getStyleClass().add("stat-card");

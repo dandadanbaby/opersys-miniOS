@@ -155,12 +155,6 @@ public class CpuSchedulingView extends ScrollPane {
         card.getStyleClass().add("stat-card");
         return card;
     }
-        descLabel.getStyleClass().add("stat-card-description");
-
-        VBox card = new VBox(4, topRow, valueRow, descLabel);
-        card.getStyleClass().add("stat-card");
-        return card;
-    }
 
     // ----------------------------------------------------------------
     //  Main two-panel area

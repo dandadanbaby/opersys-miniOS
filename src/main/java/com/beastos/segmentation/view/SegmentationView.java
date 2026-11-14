@@ -73,7 +73,7 @@ public class SegmentationView extends ScrollPane {
 
         rebuildSegmentTable();
         // Load default target from segmentation.png
-        targetSegSpinner.getValueFactory().setValue(1);
+        segNumField.setText("1");
         offsetField.setText("320");
         runTranslation();
     }
@@ -213,6 +213,14 @@ public class SegmentationView extends ScrollPane {
         baseFields = new TextField[count];
         limitFields = new TextField[count];
 
+        int[][] defaultData = {
+            {1400, 100},
+            {6300, 400},
+            {4300, 500},
+            {2000, 250},
+            {7200, 150}
+        };
+
         for (int i = 0; i < count; i++) {
             Label segLabel = new Label("Seg " + i);
             segLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #2dd4bf; -fx-font-weight: bold;");
@@ -221,11 +229,17 @@ public class SegmentationView extends ScrollPane {
             TextField baseF = new TextField();
             baseF.setPrefWidth(120);
             baseF.setPromptText("Base");
+            if (i < defaultData.length) {
+                baseF.setText(String.valueOf(defaultData[i][0]));
+            }
             baseFields[i] = baseF;
 
             TextField limitF = new TextField();
             limitF.setPrefWidth(120);
             limitF.setPromptText("Limit");
+            if (i < defaultData.length) {
+                limitF.setText(String.valueOf(defaultData[i][1]));
+            }
             limitFields[i] = limitF;
 
             HBox row = new HBox(8, segLabel, baseF, limitF);

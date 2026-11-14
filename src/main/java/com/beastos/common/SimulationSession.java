@@ -53,6 +53,7 @@ public class SimulationSession {
     // --- Simulations Completed ---
     public int getSimulationsCompleted() { return simulationsCompleted.get(); }
     public IntegerProperty simulationsCompletedProperty() { return simulationsCompleted; }
+    public void setSimulationsCompleted(int value) { simulationsCompleted.set(value); }
     public void incrementSimulationsCompleted() {
         simulationsCompleted.set(simulationsCompleted.get() + 1);
     }

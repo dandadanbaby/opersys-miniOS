@@ -67,6 +67,8 @@ public class BeastOSApp extends Application {
         session.setActiveProcesses(8);
         session.setCpuUtilization(72.4);
         session.setMemoryInUse(4.94); // 4.94 out of 8.0 GB = 61.8%
+        session.setTotalMemory(8.0);
+        session.setSimulationsCompleted(24);
         session.setResourceUtilization(38.0);
         session.setSimulationState(com.beastos.common.SimulationState.RUNNING);
 

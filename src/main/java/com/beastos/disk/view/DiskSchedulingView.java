@@ -72,13 +72,15 @@ public class DiskSchedulingView extends ScrollPane {
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
 
         // Default values from design reference
+        initialPosField.setText("53");
+        cylinderLimitField.setText("199");
         requestQueueField.setText("98, 183, 37, 122, 14, 124, 65, 67");
         directionUpCheck.setSelected(true);
         directionUpCheck.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 12px;");
 
         // Select SSTF matching disk-scheduling.png and run simulation
         selectAlgorithm("SSTF");
-        runSimulation();
+        runScheduling();
     }
 
     // ================================================================
