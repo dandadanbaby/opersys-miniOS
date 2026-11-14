@@ -21,7 +21,7 @@ public class BeastOSApp extends Application {
 
         // Layout: Sidebar (left, full height) | Right area (header + content)
         SidebarView sidebar = new SidebarView(navService);
-        HeaderBar header = new HeaderBar(navService);
+        HeaderBar header = new HeaderBar();
 
         // Content area (where module views are swapped)
         VBox contentWrapper = new VBox();

@@ -26,12 +26,9 @@ public class HeaderBar {
     private final Label breadcrumbCurrent;
     private final Label timeValue;
     private final Label statusValue;
-    private final NavigationService navService;
     private final SimulationSession session = SimulationSession.getInstance();
 
-    public HeaderBar(NavigationService navService) {
-        this.navService = navService;
-
+    public HeaderBar() {
         // Breadcrumb
         breadcrumbPrefix = new Label("WORKSPACE  /  ");
         breadcrumbPrefix.setStyle("-fx-text-fill: #64748b; -fx-font-size: 13px; -fx-font-weight: bold;");
@@ -104,9 +101,5 @@ public class HeaderBar {
 
     public Node getView() {
         return view;
-    }
-
-    public NavigationService getNavService() {
-        return navService;
     }
 }

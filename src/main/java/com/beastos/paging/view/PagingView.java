@@ -426,7 +426,7 @@ public class PagingView extends ScrollPane {
             String text = field.getText().trim();
             if (text.isEmpty()) continue;
             try {
-                addresses.add(Integer.parseInt(text));
+                addresses.add(Integer.valueOf(text));
             } catch (NumberFormatException e) {
                 errorLabel.setText("Address #" + (i + 1) + " must be a valid integer."); return;
             }
