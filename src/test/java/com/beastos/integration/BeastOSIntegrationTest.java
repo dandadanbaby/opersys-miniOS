@@ -78,6 +78,26 @@ class BeastOSIntegrationTest {
     }
 
     @Test
+    void testLiveProcessKillAndSpawnUpdatesSession() {
+        session.initDefaultProcesses(List.of("P1", "P2", "P3", "P4", "P5", "P6"));
+        assertEquals(6, session.getActiveProcesses());
+        assertEquals(6, session.getActiveProcessNames().size());
+
+        // Kill one process live -> count must drop from 6 to 5
+        session.killProcess("P6");
+        assertEquals(5, session.getActiveProcesses());
+        assertEquals(5, session.getActiveProcessNames().size());
+        assertFalse(session.getActiveProcessNames().contains("P6"));
+        assertTrue(session.getCpuUtilization() > 0.0);
+        assertTrue(session.getMemoryInUse() > 0.0);
+
+        // Spawn a process live -> count returns to 6
+        session.spawnProcess();
+        assertEquals(6, session.getActiveProcesses());
+        assertEquals(6, session.getActiveProcessNames().size());
+    }
+
+    @Test
     void testEndToEndAllEightSubsystemsWorkflow() {
         // 1. CPU Scheduling (Round Robin)
         RoundRobinScheduler rr = new RoundRobinScheduler(4);

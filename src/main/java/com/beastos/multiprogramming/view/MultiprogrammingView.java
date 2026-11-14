@@ -418,7 +418,16 @@ public class MultiprogrammingView extends ScrollPane {
         session.setSimulationState(SimulationState.COMPLETED);
         session.incrementSimulationsCompleted();
         session.setActiveProcesses(currentOutput.getDegreeOfMultiprogramming());
-        session.setMemoryInUse(4.94); // 4.94 GB (61.8% of 8.0 GB workstation RAM)
+
+        List<String> activeNames = new ArrayList<>();
+        for (ProgramProcess p : currentOutput.getActiveProcesses()) {
+            activeNames.add(p.getPid());
+        }
+        session.initDefaultProcesses(activeNames);
+
+        double ramMb = currentOutput.getAllocatedMemory();
+        double totalMb = currentOutput.getTotalMemory();
+        session.setMemoryInUse(Math.round(((ramMb / totalMb) * session.getTotalMemory()) * 100.0) / 100.0);
 
         // Update UI
         updateView(currentOutput);
@@ -575,6 +584,12 @@ public class MultiprogrammingView extends ScrollPane {
         for (ProcessInputRow r : processRows) {
             processListContainer.getChildren().add(r.getNode());
         }
+
+        // Live update session metrics so Overview and system state reflect termination
+        session.killProcess(pid);
+        double ramMb = currentOutput.getAllocatedMemory();
+        double totalMb = currentOutput.getTotalMemory();
+        session.setMemoryInUse(Math.round(((ramMb / totalMb) * session.getTotalMemory()) * 100.0) / 100.0);
 
         updateView(currentOutput);
     }

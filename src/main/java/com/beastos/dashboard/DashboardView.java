@@ -4,6 +4,7 @@ import com.beastos.app.NavigationService;
 import com.beastos.common.FormatUtils;
 import com.beastos.common.SimulationSession;
 import javafx.beans.binding.Bindings;
+import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -13,6 +14,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
@@ -22,6 +24,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 import java.io.InputStream;
+import java.util.List;
 
 /**
  * BEAST OS Dashboard / Overview.
@@ -108,24 +111,33 @@ public class DashboardView extends ScrollPane {
         VBox card1 = buildCard("ACTIVE PROCESSES", "/icons/badge_processes.png",
                 Bindings.createStringBinding(() -> {
                     int v = session.getActiveProcesses();
-                    return (v <= 0) ? "08" : FormatUtils.zeroPad(v, 2);
+                    return FormatUtils.zeroPad(Math.max(0, v), 2);
                 }, session.activeProcessesProperty()),
-                Bindings.createStringBinding(() -> "+2 this session"),
+                Bindings.createStringBinding(() -> {
+                    int v = session.getActiveProcesses();
+                    if (v == 0) return "All processes terminated";
+                    if (v >= 6) return "+2 this session";
+                    return v + " active in memory";
+                }, session.activeProcessesProperty()),
                 GREEN);
 
         VBox card2 = buildCard("CPU UTILIZATION", "/icons/badge_cpu.png",
                 Bindings.createStringBinding(() -> {
                     double v = session.getCpuUtilization();
-                    return (v <= 0.0) ? "72.4%" : FormatUtils.formatPercent(v);
+                    return FormatUtils.formatPercent(v);
                 }, session.cpuUtilizationProperty()),
-                Bindings.createStringBinding(() -> "Within normal range"),
+                Bindings.createStringBinding(() -> {
+                    double v = session.getCpuUtilization();
+                    if (v <= 10.0) return "Idle / standby";
+                    if (v >= 85.0) return "Heavy compute";
+                    return "Within normal range";
+                }, session.cpuUtilizationProperty()),
                 GREEN);
 
         VBox card3 = buildCard("MEMORY IN USE", "/icons/badge_memory.png",
                 Bindings.createStringBinding(() -> {
                     double used = session.getMemoryInUse();
                     double total = session.getTotalMemory();
-                    if (used <= 0.0) used = 4.94;
                     if (total <= 0.0) total = 8.0;
                     double pct = (used / total) * 100.0;
                     return FormatUtils.formatPercent(pct);
@@ -133,7 +145,6 @@ public class DashboardView extends ScrollPane {
                 Bindings.createStringBinding(() -> {
                     double used = session.getMemoryInUse();
                     double total = session.getTotalMemory();
-                    if (used <= 0.0) used = 4.94;
                     if (total <= 0.0) total = 8.0;
                     String totalStr = (total == (long) total) ? String.valueOf((long) total) : FormatUtils.formatDecimal1(total);
                     return FormatUtils.formatDecimal1(used) + " out of " + totalStr + "GB";
@@ -143,7 +154,7 @@ public class DashboardView extends ScrollPane {
         VBox card4 = buildCard("SIMULATION COMPLETED", "/icons/badge_completed.png",
                 Bindings.createStringBinding(() -> {
                     int v = session.getSimulationsCompleted();
-                    return (v <= 0) ? "24" : String.valueOf(v);
+                    return String.valueOf(Math.max(0, v));
                 }, session.simulationsCompletedProperty()),
                 Bindings.createStringBinding(() -> "Across 8 modules"),
                 GREEN);
@@ -210,11 +221,29 @@ public class DashboardView extends ScrollPane {
         Label subtitle = new Label("Round Robin • Time Quantum: 4ms");
         subtitle.getStyleClass().add("panel-subtitle");
 
-        Canvas ganttCanvas = new Canvas(600, 210);
-        drawShowcaseGantt(ganttCanvas);
-        ganttCanvas.widthProperty().addListener((obs, o, n) -> drawShowcaseGantt(ganttCanvas));
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        VBox panel = new VBox(8, title, subtitle, ganttCanvas);
+        HBox processChips = new HBox(6);
+        processChips.setAlignment(Pos.CENTER_RIGHT);
+
+        HBox headerRow = new HBox(10, new VBox(2, title, subtitle), spacer, processChips);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+
+        Canvas ganttCanvas = new Canvas(600, 210);
+
+        Runnable refreshGantt = () -> {
+            updateProcessChips(processChips);
+            drawLiveGantt(ganttCanvas);
+        };
+
+        refreshGantt.run();
+
+        session.getActiveProcessNames().addListener((ListChangeListener<String>) c -> refreshGantt.run());
+        session.activeProcessesProperty().addListener((obs, o, n) -> refreshGantt.run());
+        ganttCanvas.widthProperty().addListener((obs, o, n) -> drawLiveGantt(ganttCanvas));
+
+        VBox panel = new VBox(8, headerRow, ganttCanvas);
         panel.getStyleClass().add("panel");
         panel.setMinHeight(280);
         ganttCanvas.widthProperty().bind(panel.widthProperty().subtract(40));
@@ -222,7 +251,38 @@ public class DashboardView extends ScrollPane {
         return panel;
     }
 
-    private void drawShowcaseGantt(Canvas canvas) {
+    private void updateProcessChips(HBox container) {
+        container.getChildren().clear();
+
+        Label label = new Label("Active Procs:");
+        label.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 11px; -fx-font-weight: bold;");
+        container.getChildren().add(label);
+
+        for (String pid : session.getActiveProcessNames()) {
+            HBox chip = new HBox(4);
+            chip.setAlignment(Pos.CENTER);
+            chip.setStyle("-fx-background-color: #161b22; -fx-border-color: #334155; -fx-border-radius: 4; -fx-padding: 2 6;");
+
+            Label pLabel = new Label(pid);
+            pLabel.setStyle("-fx-text-fill: #2dd4bf; -fx-font-size: 11px; -fx-font-weight: bold;");
+
+            Button killBtn = new Button("✕");
+            killBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #ef4444; -fx-font-size: 10px; -fx-padding: 0 2; -fx-cursor: hand;");
+            killBtn.setTooltip(new Tooltip("Terminate process " + pid));
+            killBtn.setOnAction(e -> session.killProcess(pid));
+
+            chip.getChildren().addAll(pLabel, killBtn);
+            container.getChildren().add(chip);
+        }
+
+        Button spawnBtn = new Button("+ Spawn");
+        spawnBtn.setStyle("-fx-background-color: #0f766e; -fx-text-fill: #ffffff; -fx-font-size: 10px; -fx-font-weight: bold; -fx-border-radius: 4; -fx-padding: 2 7; -fx-cursor: hand;");
+        spawnBtn.setTooltip(new Tooltip("Spawn new process live"));
+        spawnBtn.setOnAction(e -> session.spawnProcess());
+        container.getChildren().add(spawnBtn);
+    }
+
+    private void drawLiveGantt(Canvas canvas) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         double w = canvas.getWidth();
         double h = canvas.getHeight();
@@ -230,82 +290,88 @@ public class DashboardView extends ScrollPane {
 
         gc.clearRect(0, 0, w, h);
 
+        List<String> procs = session.getActiveProcessNames();
+        if (procs.isEmpty()) {
+            gc.setFill(TEXT_MUTED);
+            gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+            gc.fillText("All processes terminated • System idle (0 active processes)", w / 2 - 170, h / 2 - 5);
+            gc.setFont(Font.font("Segoe UI", 12));
+            gc.fillText("Click [+ Spawn] above or open CPU Scheduling / Multiprogramming to launch simulations", w / 2 - 220, h / 2 + 18);
+            return;
+        }
+
+        int procCount = procs.size();
         double labelWidth = 65;
         double chartWidth = w - labelWidth - 20;
         double startX = labelWidth;
         double startY = 30;
-        double rowHeight = 32;
-        double totalTime = 24.0;
+        double rowHeight = Math.min(32.0, (h - startY - 25) / Math.max(1, procCount));
+        double totalTime = Math.max(16.0, procCount * 4.0);
 
-        // Process names & row background guides
-        String[] processes = {"P1", "P2", "P3", "P4"};
         gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
 
-        // Column grid lines at 0, 4, 8, 12, 16, 20, 24ms
-        int[] timeMarkers = {0, 4, 8, 12, 16, 20, 24};
+        // Time markers
+        int step = (int) Math.max(4, Math.round(totalTime / 6.0));
         gc.setLineWidth(1.0);
-        for (int t : timeMarkers) {
+        for (int t = 0; t <= totalTime; t += step) {
             double x = startX + (t / totalTime) * chartWidth;
             gc.setStroke(Color.web("#1e293b"));
-            gc.strokeLine(x, startY, x, startY + 4 * rowHeight);
+            gc.strokeLine(x, startY, x, startY + procCount * rowHeight);
 
-            // Time text at bottom
             gc.setFill(TEXT_MUTED);
             gc.setFont(Font.font("Segoe UI", 11));
-            String timeStr = (t == 0) ? "0ms" : String.valueOf(t);
-            gc.fillText(timeStr, x - ((t == 0) ? 10 : 4), startY + 4 * rowHeight + 18);
+            String timeStr = (t == 0) ? "0ms" : t + "ms";
+            gc.fillText(timeStr, x - ((t == 0) ? 10 : 6), startY + procCount * rowHeight + 16);
         }
+
+        Color[] colors = {ACCENT, BLUE, AMBER, PURPLE, Color.web("#38bdf8"), Color.web("#ec4899"), Color.web("#10b981"), Color.web("#ea580c")};
 
         // Draw rows
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < procCount; i++) {
             double y = startY + i * rowHeight;
-
-            // Row header label: "P1", "P2", etc.
             gc.setFill(TEXT_SECONDARY);
             gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-            gc.fillText(processes[i], 12, y + 21);
+            gc.fillText(procs.get(i), 12, y + rowHeight * 0.65);
 
-            // Row subtle horizontal line
             gc.setStroke(Color.web("#151f2e"));
             gc.strokeLine(startX, y + rowHeight, startX + chartWidth, y + rowHeight);
+
+            // Draw round robin execution slices for this process
+            Color c = colors[i % colors.length];
+            double sliceTime = 4.0;
+            double t1 = i * 4.0;
+            if (t1 < totalTime) {
+                drawBlock(gc, startX, startY, chartWidth, totalTime, i, t1, Math.min(totalTime, t1 + sliceTime), rowHeight, c, procs.get(i));
+            }
+            double t2 = t1 + procCount * 4.0;
+            if (t2 < totalTime) {
+                drawBlock(gc, startX, startY, chartWidth, totalTime, i, t2, Math.min(totalTime, t2 + sliceTime), rowHeight, c, procs.get(i));
+            }
         }
-
-        // Draw Round Robin execution blocks matching overview-dashboard.png
-        // P1: 0..4 (Teal), 16..20 (Teal)
-        drawBlock(gc, startX, startY, chartWidth, totalTime, 0, 0, 4, ACCENT, "P1", "0-4ms");
-        drawBlock(gc, startX, startY, chartWidth, totalTime, 0, 16, 20, ACCENT, "P1", "16-20ms");
-
-        // P2: 4..8 (Blue)
-        drawBlock(gc, startX, startY, chartWidth, totalTime, 1, 4, 8, BLUE, "P2", "4-8ms");
-
-        // P3: 8..12 (Amber), 20..24 (Amber)
-        drawBlock(gc, startX, startY, chartWidth, totalTime, 2, 8, 12, AMBER, "P3", "8-12ms");
-        drawBlock(gc, startX, startY, chartWidth, totalTime, 2, 20, 24, AMBER, "P3", "20-24ms");
-
-        // P4: 12..16 (Purple)
-        drawBlock(gc, startX, startY, chartWidth, totalTime, 3, 12, 16, PURPLE, "P4", "12-16ms");
 
         // Column Header Text
         gc.setFill(TEXT_MUTED);
         gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 10));
         gc.fillText("PROCESS", 12, 18);
-        gc.fillText("EXECUTION ORDER", startX, 18);
+        gc.fillText("EXECUTION ORDER (Round Robin • 4ms Quantum)", startX, 18);
     }
 
     private void drawBlock(GraphicsContext gc, double startX, double startY, double chartWidth,
                            double totalTime, int rowIdx, double tStart, double tEnd,
-                           Color color, String label, String range) {
+                           double rowHeight, Color color, String label) {
         double x = startX + (tStart / totalTime) * chartWidth + 2;
-        double w = ((tEnd - tStart) / totalTime) * chartWidth - 4;
-        double y = startY + rowIdx * 32 + 4;
-        double h = 24;
+        double w = Math.max(4, ((tEnd - tStart) / totalTime) * chartWidth - 4);
+        double y = startY + rowIdx * rowHeight + 3;
+        double h = Math.max(12, rowHeight - 6);
 
         gc.setFill(color);
         gc.fillRoundRect(x, y, w, h, 6, 6);
 
         gc.setFill(Color.web("#0b1019"));
         gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
-        gc.fillText(label, x + w / 2 - 8, y + 16);
+        if (w > 20) {
+            gc.fillText(label, x + w / 2 - 8, y + h / 2 + 4);
+        }
     }
 
     private VBox createResourcePanel() {
@@ -316,17 +382,33 @@ public class DashboardView extends ScrollPane {
         subtitle.getStyleClass().add("panel-subtitle");
 
         Canvas donutCanvas = new Canvas(150, 150);
-        drawShowcaseDonut(donutCanvas);
 
-        // Progress bars matching design reference
+        Runnable refreshDonut = () -> drawLiveDonut(donutCanvas);
+        refreshDonut.run();
+
+        session.cpuUtilizationProperty().addListener((obs, o, n) -> refreshDonut.run());
+        session.memoryInUseProperty().addListener((obs, o, n) -> refreshDonut.run());
+        session.totalMemoryProperty().addListener((obs, o, n) -> refreshDonut.run());
+        session.resourceUtilizationProperty().addListener((obs, o, n) -> refreshDonut.run());
+
+        // Progress bars matching design reference — reactive and live
         VBox progressSection = new VBox(10);
         progressSection.setPadding(new Insets(10, 0, 0, 16));
         HBox.setHgrow(progressSection, Priority.ALWAYS);
 
         progressSection.getChildren().addAll(
-                createBarRow("CPU", "72.4%", 0.724, BLUE),
-                createBarRow("Memory", "61.8%", 0.618, ACCENT),
-                createBarRow("Resources", "38.0%", 0.380, AMBER)
+                createLiveBarRow("CPU",
+                        Bindings.createStringBinding(() -> FormatUtils.formatPercent(session.getCpuUtilization()), session.cpuUtilizationProperty()),
+                        Bindings.createDoubleBinding(() -> Math.min(1.0, Math.max(0.0, session.getCpuUtilization() / 100.0)), session.cpuUtilizationProperty()),
+                        BLUE),
+                createLiveBarRow("Memory",
+                        Bindings.createStringBinding(() -> FormatUtils.formatPercent(session.getMemoryPercent()), session.memoryInUseProperty(), session.totalMemoryProperty()),
+                        Bindings.createDoubleBinding(() -> Math.min(1.0, Math.max(0.0, session.getMemoryPercent() / 100.0)), session.memoryInUseProperty(), session.totalMemoryProperty()),
+                        ACCENT),
+                createLiveBarRow("Resources",
+                        Bindings.createStringBinding(() -> FormatUtils.formatPercent(session.getResourceUtilization()), session.resourceUtilizationProperty()),
+                        Bindings.createDoubleBinding(() -> Math.min(1.0, Math.max(0.0, session.getResourceUtilization() / 100.0)), session.resourceUtilizationProperty()),
+                        AMBER)
         );
 
         HBox chartRow = new HBox(8, donutCanvas, progressSection);
@@ -340,7 +422,7 @@ public class DashboardView extends ScrollPane {
         return panel;
     }
 
-    private void drawShowcaseDonut(Canvas canvas) {
+    private void drawLiveDonut(Canvas canvas) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         double w = canvas.getWidth();
         double h = canvas.getHeight();
@@ -351,47 +433,60 @@ public class DashboardView extends ScrollPane {
         double radius = Math.min(w, h) / 2 - 6;
         double thickness = 14;
 
-        // 3-color arc: Blue (40%), Teal (35%), Amber (25%)
+        double cpuFrac = Math.min(1.0, Math.max(0.05, session.getCpuUtilization() / 100.0));
+        double memFrac = Math.min(1.0, Math.max(0.05, session.getMemoryPercent() / 100.0));
+        double resFrac = Math.min(1.0, Math.max(0.05, session.getResourceUtilization() / 100.0));
+        double sum = cpuFrac + memFrac + resFrac;
+        if (sum <= 0) sum = 1.0;
+
+        double arc1 = (cpuFrac / sum) * 360.0;
+        double arc2 = (memFrac / sum) * 360.0;
+        double arc3 = 360.0 - arc1 - arc2;
+
         gc.setLineWidth(thickness);
 
-        // Arc 1: Blue
+        // Arc 1: Blue (CPU)
         gc.setStroke(BLUE);
         gc.strokeArc(cx - radius + thickness / 2, cy - radius + thickness / 2,
-                (radius - thickness / 2) * 2, (radius - thickness / 2) * 2, 90, 150, ArcType.OPEN);
+                (radius - thickness / 2) * 2, (radius - thickness / 2) * 2, 90, arc1, ArcType.OPEN);
 
-        // Arc 2: Teal
+        // Arc 2: Teal (Memory)
         gc.setStroke(ACCENT);
         gc.strokeArc(cx - radius + thickness / 2, cy - radius + thickness / 2,
-                (radius - thickness / 2) * 2, (radius - thickness / 2) * 2, 240, 120, ArcType.OPEN);
+                (radius - thickness / 2) * 2, (radius - thickness / 2) * 2, 90 + arc1, arc2, ArcType.OPEN);
 
-        // Arc 3: Amber
+        // Arc 3: Amber (Resources)
         gc.setStroke(AMBER);
         gc.strokeArc(cx - radius + thickness / 2, cy - radius + thickness / 2,
-                (radius - thickness / 2) * 2, (radius - thickness / 2) * 2, 360, 90, ArcType.OPEN);
+                (radius - thickness / 2) * 2, (radius - thickness / 2) * 2, 90 + arc1 + arc2, arc3, ArcType.OPEN);
 
-        // Center text: 72% / CPU LOAD
+        // Center text: CPU % / CPU LOAD
         gc.setFill(TEXT_PRIMARY);
         gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
-        gc.fillText("72%", cx - 20, cy + 3);
+        String cpuPct = String.format("%.0f%%", session.getCpuUtilization());
+        gc.fillText(cpuPct, cx - (cpuPct.length() > 3 ? 24 : 18), cy + 3);
 
         gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 9));
         gc.setFill(TEXT_SECONDARY);
         gc.fillText("CPU LOAD", cx - 22, cy + 18);
     }
 
-    private VBox createBarRow(String label, String percentStr, double fraction, Color barColor) {
+    private VBox createLiveBarRow(String label, javafx.beans.binding.StringBinding textBinding,
+                                  javafx.beans.binding.DoubleBinding progressBinding, Color barColor) {
         Label name = new Label(label);
         name.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 12px;");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Label val = new Label(percentStr);
+        Label val = new Label();
+        val.textProperty().bind(textBinding);
         val.setStyle("-fx-text-fill: #f8fafc; -fx-font-size: 12px; -fx-font-weight: bold;");
 
         HBox top = new HBox(name, spacer, val);
 
-        ProgressBar bar = new ProgressBar(fraction);
+        ProgressBar bar = new ProgressBar();
+        bar.progressProperty().bind(progressBinding);
         bar.setMaxWidth(Double.MAX_VALUE);
         bar.setStyle("-fx-accent: " + toWeb(barColor) + "; -fx-control-inner-background: #1e293b;");
 

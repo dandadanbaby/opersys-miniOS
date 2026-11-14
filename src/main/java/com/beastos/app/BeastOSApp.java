@@ -64,7 +64,7 @@ public class BeastOSApp extends Application {
 
         // Initialize session showcase defaults from overview-dashboard.png
         com.beastos.common.SimulationSession session = com.beastos.common.SimulationSession.getInstance();
-        session.setActiveProcesses(8);
+        session.initDefaultProcesses(java.util.List.of("P1", "P2", "P3", "P4", "P5", "P6"));
         session.setCpuUtilization(72.4);
         session.setMemoryInUse(4.94); // 4.94 out of 8.0 GB = 61.8%
         session.setTotalMemory(8.0);
