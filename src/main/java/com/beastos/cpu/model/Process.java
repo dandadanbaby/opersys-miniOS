@@ -1,14 +1,13 @@
 package com.beastos.cpu.model;
 
-/**
- * Represents a process for CPU scheduling.
- * Immutable input model.
- */
+// this is our basic process model representing a job to be scheduled on the CPU.
+// we made all the fields final so it's immutable — that way, when scheduling algorithms
+// simulate execution, they can't accidentally mutate the original input values!
 public class Process {
     private final String pid;
     private final int arrivalTime;
     private final int burstTime;
-    private final int priority; // lower value = higher priority
+    private final int priority; // in our OS class convention, lower number = higher priority (0 is top priority)
 
     public Process(String pid, int arrivalTime, int burstTime, int priority) {
         this.pid = pid;
@@ -17,6 +16,8 @@ public class Process {
         this.priority = priority;
     }
 
+    // handy constructor for algorithms that don't care about priority (like FCFS or Round Robin)
+    // we just default priority to 0 so we don't have to pass dummy values
     public Process(String pid, int arrivalTime, int burstTime) {
         this(pid, arrivalTime, burstTime, 0);
     }

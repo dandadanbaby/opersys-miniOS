@@ -26,17 +26,17 @@ import javafx.scene.text.FontWeight;
 import java.io.InputStream;
 import java.util.List;
 
-/**
- * BEAST OS Dashboard / Overview.
- * Exact replication of Design References/Overview/overview-dashboard.png:
- * stat cards with extracted vector badges, multi-row CPU execution timeline,
- * system resources donut chart with live allocation, and 8 module cards.
+/*
+ * Hey guys, this is our main BEAST OS Dashboard overview!
+ * We put together this screen to show a high-level picture of what's happening in the system:
+ * quick stat cards at the top, a live Round Robin Gantt timeline next to a resource donut chart,
+ * and cards at the bottom linking directly to our 8 simulation modules.
  */
 public class DashboardView extends ScrollPane {
 
     private static final SimulationSession session = SimulationSession.getInstance();
 
-    // Theme colors
+    // our color palette for the dark theme so everything matches across the dashboard
     private static final Color ACCENT = Color.web("#2dd4bf");
     private static final Color AMBER  = Color.web("#f59e0b");
     private static final Color BLUE   = Color.web("#3b82f6");
@@ -52,16 +52,16 @@ public class DashboardView extends ScrollPane {
         VBox content = new VBox(20);
         content.setPadding(new Insets(0));
 
-        // A. Content Header
+        // section A: title banner and the "New Simulation" button
         content.getChildren().add(createContentHeader());
 
-        // B. Stat Cards Row
+        // section B: top row cards showing live metrics (active procs, CPU %, memory)
         content.getChildren().add(createStatCards());
 
-        // C. Two-Panel Visualization Area
+        // section C: middle split view with the Gantt chart and resource donut chart
         content.getChildren().add(createVisualizationArea());
 
-        // D. Simulation Models Grid
+        // section D: 2x4 card grid to navigate to each OS simulation module
         content.getChildren().add(createModuleGrid());
 
         setContent(content);
@@ -76,7 +76,7 @@ public class DashboardView extends ScrollPane {
     }
 
     // ----------------------------------------------------------------
-    //  A. Content Header
+    //  A. Header banner with quick navigation
     // ----------------------------------------------------------------
     private VBox createContentHeader() {
         Label tag = new Label("OPERATING SYSTEM WORKBENCH");
@@ -96,6 +96,7 @@ public class DashboardView extends ScrollPane {
             }
         });
 
+        // spacer pushes the button over to the far right of the header
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox titleRow = new HBox(title, spacer, newSimBtn);
@@ -105,9 +106,10 @@ public class DashboardView extends ScrollPane {
     }
 
     // ----------------------------------------------------------------
-    //  B. Stat Cards
+    //  B. Stat Cards — we bound these to SimulationSession so they update live!
     // ----------------------------------------------------------------
     private HBox createStatCards() {
+        // active process count in memory — formatted with zeroPad so "05" looks clean
         VBox card1 = buildCard("ACTIVE PROCESSES", "/icons/badge_processes.png",
                 Bindings.createStringBinding(() -> {
                     int v = session.getActiveProcesses();
@@ -121,6 +123,7 @@ public class DashboardView extends ScrollPane {
                 }, session.activeProcessesProperty()),
                 GREEN);
 
+        // overall CPU load percentage
         VBox card2 = buildCard("CPU UTILIZATION", "/icons/badge_cpu.png",
                 Bindings.createStringBinding(() -> {
                     double v = session.getCpuUtilization();
@@ -134,6 +137,7 @@ public class DashboardView extends ScrollPane {
                 }, session.cpuUtilizationProperty()),
                 GREEN);
 
+        // memory in use — we default to 8GB if total is 0 to avoid dividing by zero lol
         VBox card3 = buildCard("MEMORY IN USE", "/icons/badge_memory.png",
                 Bindings.createStringBinding(() -> {
                     double used = session.getMemoryInUse();
@@ -151,6 +155,7 @@ public class DashboardView extends ScrollPane {
                 }, session.memoryInUseProperty(), session.totalMemoryProperty()),
                 ACCENT);
 
+        // total simulation runs completed across all modules
         VBox card4 = buildCard("SIMULATION COMPLETED", "/icons/badge_completed.png",
                 Bindings.createStringBinding(() -> {
                     int v = session.getSimulationsCompleted();
@@ -168,6 +173,7 @@ public class DashboardView extends ScrollPane {
         return row;
     }
 
+    // helper method to build each stat card so we don't have to duplicate the card layout 4 times
     private VBox buildCard(String labelText, String badgePath,
                           javafx.beans.binding.StringBinding valueBinding,
                           javafx.beans.binding.StringBinding descBinding,
@@ -198,12 +204,14 @@ public class DashboardView extends ScrollPane {
     }
 
     // ----------------------------------------------------------------
-    //  C. Two-Panel Visualization Area
+    //  C. Two-Panel Visualization Area: Gantt timeline + Resource Donut
     // ----------------------------------------------------------------
     private HBox createVisualizationArea() {
         VBox ganttPanel = createGanttPanel();
         VBox resourcePanel = createResourcePanel();
 
+        // we let the Gantt panel expand to fill available horizontal space,
+        // but keep the resource panel at least 360px wide so the donut chart doesn't cramp
         HBox.setHgrow(ganttPanel, Priority.ALWAYS);
         ganttPanel.setMaxWidth(Double.MAX_VALUE);
         ganttPanel.setMinWidth(0);
@@ -214,6 +222,7 @@ public class DashboardView extends ScrollPane {
         return area;
     }
 
+    // this panel hosts the CPU execution timeline canvas and process chips
     private VBox createGanttPanel() {
         Label title = new Label("CPU execution timeline");
         title.getStyleClass().add("panel-title");
@@ -239,6 +248,7 @@ public class DashboardView extends ScrollPane {
 
         refreshGantt.run();
 
+        // listen for process list changes or window resizing and redraw on the fly
         session.getActiveProcessNames().addListener((ListChangeListener<String>) c -> refreshGantt.run());
         session.activeProcessesProperty().addListener((obs, o, n) -> refreshGantt.run());
         ganttCanvas.widthProperty().addListener((obs, o, n) -> drawLiveGantt(ganttCanvas));
@@ -246,11 +256,14 @@ public class DashboardView extends ScrollPane {
         VBox panel = new VBox(8, headerRow, ganttCanvas);
         panel.getStyleClass().add("panel");
         panel.setMinHeight(280);
+        // binding the canvas width to panel width minus padding keeps it responsive!
         ganttCanvas.widthProperty().bind(panel.widthProperty().subtract(40));
 
         return panel;
     }
 
+    // updates the little process tag chips up in the timeline header — we added a kill button on each
+    // and a spawn button so we can test dynamic scheduling without opening another tab
     private void updateProcessChips(HBox container) {
         container.getChildren().clear();
 
@@ -282,6 +295,7 @@ public class DashboardView extends ScrollPane {
         container.getChildren().add(spawnBtn);
     }
 
+    // this is where we actually draw the Gantt chart onto the Canvas
     private void drawLiveGantt(Canvas canvas) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         double w = canvas.getWidth();
@@ -291,6 +305,7 @@ public class DashboardView extends ScrollPane {
         gc.clearRect(0, 0, w, h);
 
         List<String> procs = session.getActiveProcessNames();
+        // if no processes are running, show an idle placeholder message instead of an empty box
         if (procs.isEmpty()) {
             gc.setFill(TEXT_MUTED);
             gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
@@ -310,7 +325,7 @@ public class DashboardView extends ScrollPane {
 
         gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
 
-        // Time markers
+        // Time markers: grid lines and millisecond timestamps across the bottom
         int step = (int) Math.max(4, Math.round(totalTime / 6.0));
         gc.setLineWidth(1.0);
         for (int t = 0; t <= totalTime; t += step) {
@@ -326,7 +341,7 @@ public class DashboardView extends ScrollPane {
 
         Color[] colors = {ACCENT, BLUE, AMBER, PURPLE, Color.web("#38bdf8"), Color.web("#ec4899"), Color.web("#10b981"), Color.web("#ea580c")};
 
-        // Draw rows
+        // draw rows for each process showing their Round Robin time slices
         for (int i = 0; i < procCount; i++) {
             double y = startY + i * rowHeight;
             gc.setFill(TEXT_SECONDARY);
@@ -336,7 +351,8 @@ public class DashboardView extends ScrollPane {
             gc.setStroke(Color.web("#151f2e"));
             gc.strokeLine(startX, y + rowHeight, startX + chartWidth, y + rowHeight);
 
-            // Draw round robin execution slices for this process
+            // here's where we simulate Round Robin scheduling: each process gets a 4ms time slice,
+            // and we illustrate subsequent rounds so the user sees CPU preemption in action!
             Color c = colors[i % colors.length];
             double sliceTime = 4.0;
             double t1 = i * 4.0;
@@ -349,13 +365,14 @@ public class DashboardView extends ScrollPane {
             }
         }
 
-        // Column Header Text
+        // column header labels at the top of the chart
         gc.setFill(TEXT_MUTED);
         gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 10));
         gc.fillText("PROCESS", 12, 18);
         gc.fillText("EXECUTION ORDER (Round Robin • 4ms Quantum)", startX, 18);
     }
 
+    // helper to draw one colored execution block (time slice) on the Gantt timeline
     private void drawBlock(GraphicsContext gc, double startX, double startY, double chartWidth,
                            double totalTime, int rowIdx, double tStart, double tEnd,
                            double rowHeight, Color color, String label) {
@@ -374,6 +391,7 @@ public class DashboardView extends ScrollPane {
         }
     }
 
+    // right panel showing system resources with our custom donut chart + progress bars
     private VBox createResourcePanel() {
         Label title = new Label("System Resources");
         title.getStyleClass().add("panel-title");
@@ -386,12 +404,13 @@ public class DashboardView extends ScrollPane {
         Runnable refreshDonut = () -> drawLiveDonut(donutCanvas);
         refreshDonut.run();
 
+        // redraw donut whenever any resource stat updates
         session.cpuUtilizationProperty().addListener((obs, o, n) -> refreshDonut.run());
         session.memoryInUseProperty().addListener((obs, o, n) -> refreshDonut.run());
         session.totalMemoryProperty().addListener((obs, o, n) -> refreshDonut.run());
         session.resourceUtilizationProperty().addListener((obs, o, n) -> refreshDonut.run());
 
-        // Progress bars matching design reference — reactive and live
+        // reactive progress bars for CPU, Memory, and peripheral resources
         VBox progressSection = new VBox(10);
         progressSection.setPadding(new Insets(10, 0, 0, 16));
         HBox.setHgrow(progressSection, Priority.ALWAYS);
@@ -422,6 +441,7 @@ public class DashboardView extends ScrollPane {
         return panel;
     }
 
+    // draws our 3-part donut chart: CPU (blue), Memory (teal), and Resources (amber)
     private void drawLiveDonut(Canvas canvas) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         double w = canvas.getWidth();
@@ -433,6 +453,7 @@ public class DashboardView extends ScrollPane {
         double radius = Math.min(w, h) / 2 - 6;
         double thickness = 14;
 
+        // calculate proportional arc angles so the 3 slices fill 360 degrees
         double cpuFrac = Math.min(1.0, Math.max(0.05, session.getCpuUtilization() / 100.0));
         double memFrac = Math.min(1.0, Math.max(0.05, session.getMemoryPercent() / 100.0));
         double resFrac = Math.min(1.0, Math.max(0.05, session.getResourceUtilization() / 100.0));
@@ -445,22 +466,22 @@ public class DashboardView extends ScrollPane {
 
         gc.setLineWidth(thickness);
 
-        // Arc 1: Blue (CPU)
+        // Arc 1: Blue represents CPU share
         gc.setStroke(BLUE);
         gc.strokeArc(cx - radius + thickness / 2, cy - radius + thickness / 2,
                 (radius - thickness / 2) * 2, (radius - thickness / 2) * 2, 90, arc1, ArcType.OPEN);
 
-        // Arc 2: Teal (Memory)
+        // Arc 2: Teal represents Memory share
         gc.setStroke(ACCENT);
         gc.strokeArc(cx - radius + thickness / 2, cy - radius + thickness / 2,
                 (radius - thickness / 2) * 2, (radius - thickness / 2) * 2, 90 + arc1, arc2, ArcType.OPEN);
 
-        // Arc 3: Amber (Resources)
+        // Arc 3: Amber represents other System Resources
         gc.setStroke(AMBER);
         gc.strokeArc(cx - radius + thickness / 2, cy - radius + thickness / 2,
                 (radius - thickness / 2) * 2, (radius - thickness / 2) * 2, 90 + arc1 + arc2, arc3, ArcType.OPEN);
 
-        // Center text: CPU % / CPU LOAD
+        // center cutout text: big CPU percentage and label in the middle of the donut
         gc.setFill(TEXT_PRIMARY);
         gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
         String cpuPct = String.format("%.0f%%", session.getCpuUtilization());
@@ -471,6 +492,7 @@ public class DashboardView extends ScrollPane {
         gc.fillText("CPU LOAD", cx - 22, cy + 18);
     }
 
+    // creates a single resource progress bar with its label, current percentage, and bar
     private VBox createLiveBarRow(String label, javafx.beans.binding.StringBinding textBinding,
                                   javafx.beans.binding.DoubleBinding progressBinding, Color barColor) {
         Label name = new Label(label);
@@ -494,7 +516,7 @@ public class DashboardView extends ScrollPane {
     }
 
     // ----------------------------------------------------------------
-    //  D. Simulation Models Grid
+    //  D. 8-Module Navigation Grid
     // ----------------------------------------------------------------
     private VBox createModuleGrid() {
         Label title = new Label("Simulation Models");
@@ -504,8 +526,7 @@ public class DashboardView extends ScrollPane {
         Label subtitle = new Label("Choose a workspace module");
         subtitle.getStyleClass().add("panel-subtitle");
 
-        // Module data matching Design References:
-        // {title, description, iconPath}
+        // metadata for each OS module: {title, short description, icon path}
         String[][] modules = {
                 {"CPU Scheduling", "Scheduling processes & Gantt Charts", "/icons/icon_cpu.png"},
                 {"Banker's Algorithm", "Safety checks & resource matrices", "/icons/icon_banker.png"},
@@ -517,6 +538,7 @@ public class DashboardView extends ScrollPane {
                 {"Multiprogramming", "Process & resource sharing", "/icons/icon_multiprogramming.png"},
         };
 
+        // we arrange them into two rows of 4 cards each for a neat 4x2 grid
         HBox row1 = new HBox(14);
         for (int i = 0; i < 4; i++) {
             VBox card = createModuleCard(modules[i][0], modules[i][1], modules[i][2]);
@@ -535,6 +557,7 @@ public class DashboardView extends ScrollPane {
         return new VBox(8, title, subtitle, grid);
     }
 
+    // builds an individual clickable card for the module grid
     private VBox createModuleCard(String name, String description, String iconPath) {
         ImageView iconView = loadIcon(iconPath, 24);
         Node iconNode = (iconView != null) ? iconView : new Region();
@@ -560,6 +583,7 @@ public class DashboardView extends ScrollPane {
         card.getStyleClass().add("module-card");
         card.setMinHeight(95);
 
+        // clicking anywhere on the card navigates straight to that module view
         card.setOnMouseClicked(e -> {
             if (navService != null) {
                 navService.navigateTo(name);
@@ -569,6 +593,7 @@ public class DashboardView extends ScrollPane {
         return card;
     }
 
+    // helper to safely load icons from our resources folder so missing files don't crash the app
     private ImageView loadIcon(String path, double size) {
         try {
             InputStream is = getClass().getResourceAsStream(path);
@@ -585,6 +610,7 @@ public class DashboardView extends ScrollPane {
         return null;
     }
 
+    // simple helper to convert JavaFX Color into a hex code string like #2DD4BF for CSS inline styles
     private String toWeb(Color c) {
         return String.format("#%02X%02X%02X",
                 (int) (c.getRed() * 255),

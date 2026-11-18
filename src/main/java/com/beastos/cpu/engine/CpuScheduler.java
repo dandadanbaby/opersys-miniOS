@@ -5,20 +5,14 @@ import com.beastos.cpu.model.SchedulingOutput;
 
 import java.util.List;
 
-/**
- * Interface for all CPU scheduling algorithms.
- * Implementations must be pure Java — no JavaFX dependency.
- */
+// this is the base interface that all our CPU scheduling algorithms have to implement (FCFS, SJF, RR, Priority)
+// we made sure to keep this pure Java with no JavaFX imports so the simulation logic stays separate from the UI!
 public interface CpuScheduler {
 
-    /**
-     * Execute the scheduling algorithm on the given processes.
-     *
-     * @param processes list of processes (must not be empty)
-     * @return complete scheduling output with results and Gantt chart
-     */
+    // this is where we actually run the algorithm on the processes
+    // basically it takes the process list and returns the Gantt chart plus all calculated times (wait, turnaround, etc.)
     SchedulingOutput schedule(List<Process> processes);
 
-    /** Return the display name of this algorithm. */
+    // returns the readable name of the algorithm so we can show it in the UI dropdown and labels
     String getAlgorithmName();
 }

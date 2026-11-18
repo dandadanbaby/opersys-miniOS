@@ -3,14 +3,14 @@ package com.beastos.banker.model;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Result of the Banker's Safety Algorithm.
- */
+/* this class holds the final verdict from our banker's safety algorithm!
+   we store whether the system is in a safe state, the safe execution sequence if one was found,
+   and each step along the way so we can display the whole walkthrough in the UI */
 public class SafetyResult {
     private final boolean safe;
-    private final List<String> safeSequence;    // e.g. ["P1", "P3", "P4", "P0", "P2"]
-    private final List<SafetyStep> steps;        // detailed step-by-step log
-    private final List<String> unfinishedProcesses; // processes that couldn't finish (unsafe)
+    private final List<String> safeSequence;    // the winning order of processes, e.g. ["P1", "P3", "P4", "P0", "P2"]
+    private final List<SafetyStep> steps;        // we keep a log of each step so we can show our work in the UI table
+    private final List<String> unfinishedProcesses; // if unsafe, we track which processes got stuck and couldn't finish
 
     public SafetyResult(boolean safe, List<String> safeSequence,
                         List<SafetyStep> steps, List<String> unfinishedProcesses) {
@@ -25,16 +25,15 @@ public class SafetyResult {
     public List<SafetyStep> getSteps() { return steps; }
     public List<String> getUnfinishedProcesses() { return unfinishedProcesses; }
 
-    /**
-     * One step of the safety check verification log.
-     */
+    /* we made this inner class to capture a snapshot of every single check during the algorithm.
+       in class we learned you have to check Need <= Work, so we record that comparison for each process */
     public static class SafetyStep {
         private final int stepNumber;
         private final String processId;
         private final int[] need;
         private final int[] work;
         private final boolean needLessOrEqualWork;
-        private final int[] workAfter; // work after executing this process
+        private final int[] workAfter; // what available resources become after this process finishes and returns its allocation
         private final String description;
 
         public SafetyStep(int stepNumber, String processId, int[] need, int[] work,
@@ -46,7 +45,7 @@ public class SafetyResult {
             this.needLessOrEqualWork = needLessOrEqualWork;
             this.workAfter = workAfter != null ? Arrays.copyOf(workAfter, workAfter.length) : null;
 
-            // Build description
+            // we build a nice readable string here so we can dump it straight to the UI log
             StringBuilder sb = new StringBuilder();
             sb.append("Step ").append(stepNumber).append(": ").append(processId);
             sb.append(" [Need: ").append(Arrays.toString(need));

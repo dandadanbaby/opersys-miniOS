@@ -9,12 +9,15 @@ import javafx.scene.text.FontWeight;
 
 import java.util.*;
 
-/**
- * Canvas-based Gantt chart renderer for CPU Scheduling visualization.
- * Draws process execution blocks in horizontal swim-lanes with a time axis.
+/*
+ * GanttChartRenderer - our custom canvas renderer for the CPU Gantt chart!
+ * Instead of doing just a single boring horizontal bar, we decided to make separate
+ * swim-lane rows for each process. That way, whenever a process gets preempted
+ * (like in Round Robin or SRTF) and resumes later, we can see its full lifecycle across time.
  */
 public final class GanttChartRenderer {
 
+    // our color palette for processes so each one stands out clearly on dark mode
     private static final Color[] PROCESS_COLORS = {
             Color.web("#22c55e"), Color.web("#f59e0b"),
             Color.web("#2dd4bf"), Color.web("#14716a"),
@@ -26,6 +29,7 @@ public final class GanttChartRenderer {
     private static final Color GRID_COLOR = Color.web("#334155");
     private static final Color ARROW_COLOR = Color.web("#94a3b8");
 
+    // layout margins and row sizing we tweaked so text labels don't get clipped
     private static final double LEFT_MARGIN = 60;
     private static final double RIGHT_MARGIN = 20;
     private static final double TOP_MARGIN = 30;
@@ -36,21 +40,21 @@ public final class GanttChartRenderer {
 
     private GanttChartRenderer() {}
 
-    /**
-     * Render a Gantt chart onto the given canvas.
-     */
+    // this is our main render method that draws the entire Gantt chart onto the canvas
     public static void render(Canvas canvas, List<GanttEntry> ganttChart) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         double w = canvas.getWidth();
         double h = canvas.getHeight();
         gc.clearRect(0, 0, w, h);
 
+        // if there's no simulation data yet, just draw the empty grid placeholder
         if (ganttChart == null || ganttChart.isEmpty()) {
             drawEmpty(gc, w, h);
             return;
         }
 
-        // Collect unique process IDs (preserving first-seen order), excluding IDLE
+        // we collect unique process IDs in the order they first appeared, skipping IDLE
+        // because CPU idle intervals don't get their own process row in our swim-lane design
         List<String> processIds = new ArrayList<>();
         Map<String, Integer> pidToRow = new LinkedHashMap<>();
         for (GanttEntry entry : ganttChart) {
@@ -60,18 +64,19 @@ public final class GanttChartRenderer {
             }
         }
 
+        // if everything was idle for some reason, we treat it as empty
         if (processIds.isEmpty()) {
             drawEmpty(gc, w, h);
             return;
         }
 
-        // Assign colors
+        // assign each process a consistent color from our palette (cycling if > 8 processes)
         Map<String, Color> colorMap = new HashMap<>();
         for (int i = 0; i < processIds.size(); i++) {
             colorMap.put(processIds.get(i), PROCESS_COLORS[i % PROCESS_COLORS.length]);
         }
 
-        // Determine time range
+        // figure out the total execution time so we can scale pixel widths to match the timeline
         int maxTime = 0;
         for (GanttEntry entry : ganttChart) {
             maxTime = Math.max(maxTime, entry.getEndTime());
@@ -82,18 +87,18 @@ public final class GanttChartRenderer {
         double chartWidth = w - LEFT_MARGIN - RIGHT_MARGIN;
         double chartHeight = numRows * (ROW_HEIGHT + ROW_GAP);
 
-        // Draw column headers
+        // draw column headers at the top so it's clear what's on the left vs the right
         gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
         gc.setFill(TEXT_MUTED);
         gc.fillText("PROCESS", 8, TOP_MARGIN - 12);
         gc.fillText("EXECUTION ORDER", LEFT_MARGIN + 10, TOP_MARGIN - 12);
 
-        // Draw grid lines
+        // draw vertical grid lines across all rows to help track time progression
         gc.setStroke(GRID_COLOR);
         gc.setLineWidth(0.5);
         int tickCount = Math.min(maxTime, 10);
         if (tickCount < 2) tickCount = 2;
-        // Use nice tick intervals
+        // calculate nice human-friendly tick intervals so the grid doesn't get cluttered
         int tickInterval = computeTickInterval(maxTime);
         int numTicks = maxTime / tickInterval;
 
@@ -103,17 +108,17 @@ public final class GanttChartRenderer {
             gc.strokeLine(x, TOP_MARGIN, x, TOP_MARGIN + chartHeight);
         }
 
-        // Draw process rows and blocks
+        // now we draw each process's row and all its execution segments
         for (int row = 0; row < numRows; row++) {
             String pid = processIds.get(row);
             double y = TOP_MARGIN + row * (ROW_HEIGHT + ROW_GAP);
 
-            // Process label
+            // draw the PID label on the left margin using that process's color
             gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
             gc.setFill(PROCESS_COLORS[row % PROCESS_COLORS.length]);
             gc.fillText(pid, 14, y + ROW_HEIGHT / 2 + 5);
 
-            // Draw execution blocks for this process
+            // filter out just the Gantt entries belonging to this specific process
             Color blockColor = colorMap.get(pid);
             List<GanttEntry> segments = new ArrayList<>();
             for (GanttEntry entry : ganttChart) {
@@ -128,11 +133,11 @@ public final class GanttChartRenderer {
                 double x2 = LEFT_MARGIN + (chartWidth * seg.getEndTime() / maxTime);
                 double blockW = x2 - x1;
 
-                // Draw rounded rectangle block
+                // draw the rounded block — min width 4px so tiny 1ms bursts don't disappear completely
                 gc.setFill(blockColor);
                 gc.fillRoundRect(x1, y + 2, Math.max(blockW, 4), ROW_HEIGHT - 4, BLOCK_RADIUS, BLOCK_RADIUS);
 
-                // Block label (time range or pid)
+                // only print the PID inside the block if it's wide enough, otherwise text spills outside
                 gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 10));
                 gc.setFill(TEXT_PRIMARY);
                 String label = pid;
@@ -141,7 +146,8 @@ public final class GanttChartRenderer {
                     gc.fillText(label, x1 + (blockW - labelWidth) / 2, y + ROW_HEIGHT / 2 + 3);
                 }
 
-                // Arrow between segments
+                // if this process was preempted and runs again later, we draw a little connector arrow
+                // basically what happens here is showing that the process was paused while something else ran
                 if (s < segments.size() - 1) {
                     GanttEntry next = segments.get(s + 1);
                     double arrowX1 = x2 + 2;
@@ -151,7 +157,7 @@ public final class GanttChartRenderer {
                         gc.setStroke(ARROW_COLOR);
                         gc.setLineWidth(1.5);
                         gc.strokeLine(arrowX1, arrowY, arrowX2, arrowY);
-                        // Arrowhead
+                        // arrowhead pointing to where execution resumes
                         gc.strokeLine(arrowX2 - 5, arrowY - 4, arrowX2, arrowY);
                         gc.strokeLine(arrowX2 - 5, arrowY + 4, arrowX2, arrowY);
                     }
@@ -159,7 +165,7 @@ public final class GanttChartRenderer {
             }
         }
 
-        // Draw time axis
+        // draw the time axis labels along the bottom in milliseconds
         gc.setFont(Font.font("Segoe UI", 11));
         gc.setFill(TEXT_MUTED);
         double axisY = TOP_MARGIN + chartHeight + 15;
@@ -168,16 +174,14 @@ public final class GanttChartRenderer {
             double x = LEFT_MARGIN + (chartWidth * t / maxTime);
             gc.fillText(t + "ms", x - 8, axisY);
         }
-        // Always show max time if not already a tick
+        // we always want to show the final completion timestamp even if it doesn't land on an exact tick
         if (maxTime % tickInterval != 0) {
             double x = LEFT_MARGIN + chartWidth;
             gc.fillText(maxTime + "ms", x - 12, axisY);
         }
     }
 
-    /**
-     * Draw an empty-state Gantt chart placeholder.
-     */
+    // draws a blank placeholder grid so the UI doesn't look empty and broken before the user clicks simulate
     private static void drawEmpty(GraphicsContext gc, double w, double h) {
         gc.setStroke(GRID_COLOR);
         gc.setLineWidth(0.5);
@@ -202,9 +206,7 @@ public final class GanttChartRenderer {
         }
     }
 
-    /**
-     * Compute a nice tick interval for the time axis.
-     */
+    // helper we came up with to pick clean round tick intervals (1, 2, 5, 10, etc.) so the time axis looks neat
     private static int computeTickInterval(int maxTime) {
         if (maxTime <= 10) return 1;
         if (maxTime <= 20) return 2;

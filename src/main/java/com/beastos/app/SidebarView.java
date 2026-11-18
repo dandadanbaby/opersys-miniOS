@@ -14,10 +14,9 @@ import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Left sidebar containing BEAST OS branding, workspace navigation,
- * module list, and status panel matching the exact design specification.
- */
+/* this is our sidebar navigation view! we designed this to sit on the left side
+   of the app so the user can easily switch between all our OS modules (scheduling,
+   memory, disk, etc.) and check system status at the bottom */
 public class SidebarView {
 
     private final VBox view;
@@ -27,7 +26,7 @@ public class SidebarView {
     private final Map<String, Label> navLabels = new LinkedHashMap<>();
     private String activeItem = "";
 
-    // Module icons (PNG resources)
+    // we map each OS topic name to its corresponding icon file in the resources folder
     private static final String[][] MODULES = {
             {"CPU Scheduling",      "/icons/icon_cpu.png"},
             {"Banker's Algorithm",  "/icons/icon_banker.png"},
@@ -45,15 +44,15 @@ public class SidebarView {
         view = new VBox();
         view.getStyleClass().add("sidebar");
 
-        // --- Logo Area ---
+        // header with our BEAST OS branding logo
         HBox logoArea = createLogoArea();
 
-        // --- Workspace Section ---
+        // workspace section with the overview/dashboard button
         Label workspaceLabel = createSectionLabel("WORKSPACE");
         Button overviewBtn = createNavButton("Overview", "/icons/icon_overview.png");
         navButtons.put("Overview", overviewBtn);
 
-        // --- Modules Section ---
+        // loop through all our OS simulation modules and create nav buttons for them
         Label modulesLabel = createSectionLabel("MODULES");
         VBox moduleButtons = new VBox(2);
         for (String[] mod : MODULES) {
@@ -62,14 +61,14 @@ public class SidebarView {
             moduleButtons.getChildren().add(btn);
         }
 
-        // --- Spacer ---
+        // we use a growing spacer Region here so the status panel gets pushed all the way to the bottom
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        // --- Status Panel ---
+        // status box at the bottom showing that our system is running okay
         VBox statusPanel = createStatusPanel();
 
-        // --- Assemble ---
+        // assemble all components into the sidebar VBox in top-to-bottom order
         view.getChildren().addAll(
                 logoArea,
                 workspaceLabel, overviewBtn,
@@ -87,6 +86,7 @@ public class SidebarView {
             logoArea.setAlignment(Pos.CENTER_LEFT);
             logoArea.setPadding(new Insets(16, 8, 12, 8));
         } else {
+            // fallback text logo in case the image fails to load so the UI doesn't look empty lol
             Label beastLabel = new Label("BEAST");
             beastLabel.getStyleClass().add("sidebar-logo-text");
             Label osLabel = new Label(" OS");
@@ -107,12 +107,13 @@ public class SidebarView {
         return label;
     }
 
+    // basically this builds each nav button with an accent bar indicator, an icon, and the module name
     private Button createNavButton(String label, String iconPath) {
         Button btn = new Button();
         btn.getStyleClass().add("sidebar-item");
         btn.setMaxWidth(Double.MAX_VALUE);
 
-        // Vertical cyan accent indicator bar on left
+        // a thin vertical indicator bar on the left that lights up cyan when active
         Region indicator = new Region();
         indicator.getStyleClass().add("sidebar-indicator");
         indicator.setPrefSize(3, 18);
@@ -120,11 +121,11 @@ public class SidebarView {
         indicator.setMaxSize(3, 18);
         navIndicators.put(label, indicator);
 
-        // Vector icon
+        // load the module icon next to the indicator bar
         ImageView iconView = loadIcon(iconPath, 18);
         Node iconNode = (iconView != null) ? iconView : new Region();
 
-        // Label
+        // the text label for the module button
         Label textLabel = new Label(label);
         textLabel.getStyleClass().add("sidebar-item-label");
         navLabels.put(label, textLabel);
@@ -139,9 +140,9 @@ public class SidebarView {
         return btn;
     }
 
-    /** Highlight the active navigation item. */
+    // handles switching the active highlight styles when the user clicks a different section
     public void setActiveItem(String moduleName) {
-        // Clear previous active
+        // clear the active styles from the previous selection
         if (!activeItem.isEmpty()) {
             if (navButtons.containsKey(activeItem)) {
                 navButtons.get(activeItem).getStyleClass().remove("sidebar-item-active");
@@ -154,7 +155,7 @@ public class SidebarView {
             }
         }
 
-        // Set new active
+        // apply the active CSS classes to the newly selected item
         activeItem = moduleName;
         if (navButtons.containsKey(moduleName)) {
             Button btn = navButtons.get(moduleName);
@@ -180,7 +181,7 @@ public class SidebarView {
         Label title = new Label("LOCAL WORKSPACE");
         title.getStyleClass().add("sidebar-status-title");
 
-        // Green dot + status text
+        // little green status dot and text to show the system is up and running
         Region dot = new Region();
         dot.getStyleClass().add("sidebar-status-dot");
 
@@ -199,6 +200,7 @@ public class SidebarView {
         return panel;
     }
 
+    // safe helper to load PNG icons — wrapped in try-catch so missing files won't crash our app
     private ImageView loadIcon(String path, double size) {
         try {
             InputStream is = getClass().getResourceAsStream(path);

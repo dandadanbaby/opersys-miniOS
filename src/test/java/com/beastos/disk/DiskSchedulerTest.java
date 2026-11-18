@@ -84,9 +84,9 @@ class DiskSchedulerTest {
     @Test
     void testScanUpOrder() {
         DiskSchedulingOutput out = scheduler.schedule(QUEUE, HEAD, LIMIT, Algorithm.SCAN, true);
-        // Going up: 65, 67, 98, 122, 124, 183, then hit 199 (limit-1), then go down: 37, 14
+        // Going up: 65, 67, 98, 122, 124, 183, then hit 200 (limit), then go down: 37, 14
         List<Integer> seq = out.getSeekSequence();
-        assertTrue(seq.contains(199), "SCAN should hit the disk boundary");
+        assertTrue(seq.contains(200), "SCAN should hit the disk boundary");
         // First elements should be ascending from head
         assertEquals(65, seq.get(0));
         assertEquals(67, seq.get(1));
@@ -109,8 +109,8 @@ class DiskSchedulerTest {
     void testCscanUpOrder() {
         DiskSchedulingOutput out = scheduler.schedule(QUEUE, HEAD, LIMIT, Algorithm.C_SCAN, true);
         List<Integer> seq = out.getSeekSequence();
-        // Up: 65, 67, 98, 122, 124, 183, 199, jump to 0, then 14, 37
-        assertTrue(seq.contains(199));
+        // Up: 65, 67, 98, 122, 124, 183, 200, jump to 0, then 14, 37
+        assertTrue(seq.contains(200));
         assertTrue(seq.contains(0));
         // 14 and 37 should come after 0
         int zeroIdx = seq.indexOf(0);
@@ -134,8 +134,8 @@ class DiskSchedulerTest {
     void testLookUpDoesNotHitBoundary() {
         DiskSchedulingOutput out = scheduler.schedule(QUEUE, HEAD, LIMIT, Algorithm.LOOK, true);
         List<Integer> seq = out.getSeekSequence();
-        // LOOK should NOT go to 199 (disk boundary), only to highest request (183)
-        assertFalse(seq.contains(199), "LOOK should not hit disk boundary");
+        // LOOK should NOT go to 200 (disk boundary), only to highest request (183)
+        assertFalse(seq.contains(200), "LOOK should not hit disk boundary");
         assertTrue(seq.contains(183));
     }
 
@@ -158,7 +158,7 @@ class DiskSchedulerTest {
         DiskSchedulingOutput out = scheduler.schedule(QUEUE, HEAD, LIMIT, Algorithm.C_LOOK, true);
         List<Integer> seq = out.getSeekSequence();
         // Up: 65, 67, 98, 122, 124, 183, then jump to lowest: 14, 37
-        assertFalse(seq.contains(199), "C-LOOK should not hit disk boundary");
+        assertFalse(seq.contains(200), "C-LOOK should not hit disk boundary");
         assertFalse(seq.contains(0), "C-LOOK should not hit 0");
         // After 183 should come 14
         int idx183 = seq.indexOf(183);
@@ -185,7 +185,7 @@ class DiskSchedulerTest {
 
     @Test
     void testValidateHeadExceedsLimit() {
-        List<String> errors = scheduler.validate(QUEUE, 200, 200);
+        List<String> errors = scheduler.validate(QUEUE, 201, 200);
         assertFalse(errors.isEmpty());
     }
 

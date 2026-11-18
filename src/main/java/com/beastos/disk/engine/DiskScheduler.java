@@ -5,26 +5,18 @@ import com.beastos.disk.model.SeekStep;
 
 import java.util.*;
 
-/**
- * Disk scheduling engine implementing 6 algorithms:
- * FCFS, SSTF, SCAN, C-SCAN, LOOK, C-LOOK.
- *
- * Pure Java — no JavaFX dependency.
+/*
+ * Hey guys, this is our disk scheduling engine for BEAST OS!
+ * We implemented all 6 algorithms we covered in class: FCFS, SSTF, SCAN, C-SCAN, LOOK, and C-LOOK.
+ * Kept it pure Java with no JavaFX dependencies here so it's super easy to unit test and debug.
  */
 public class DiskScheduler {
 
     public enum Algorithm { FCFS, SSTF, SCAN, C_SCAN, LOOK, C_LOOK }
 
-    /**
-     * Schedule disk requests using the specified algorithm.
-     *
-     * @param requestQueue   cylinder numbers in the request queue
-     * @param initialHead    starting position of the disk head
-     * @param cylinderLimit  maximum cylinder number (0 to cylinderLimit-1)
-     * @param algorithm      scheduling algorithm
-     * @param directionUp    for SCAN/C-SCAN/LOOK/C-LOOK: true = head moves toward higher cylinders first
-     * @return complete scheduling output with seek sequence, steps, and distances
-     */
+    // this is our main entry point for disk scheduling
+    // we pass in the request queue, starting head position, disk size, algorithm, and direction
+    // and it runs the chosen algorithm and builds the step-by-step seek movements for our GUI table
     public DiskSchedulingOutput schedule(int[] requestQueue, int initialHead,
                                           int cylinderLimit, Algorithm algorithm, boolean directionUp) {
         List<Integer> sequence;
@@ -38,14 +30,15 @@ public class DiskScheduler {
             default:     sequence = fcfs(requestQueue, initialHead); break;
         }
 
-        // Build step-by-step seek table
+        // build the step-by-step seek table so we can show each head movement in the UI
         List<SeekStep> steps = buildSteps(initialHead, sequence);
 
         return new DiskSchedulingOutput(algorithmName(algorithm), initialHead, cylinderLimit, sequence, steps);
     }
 
     // ----------------------------------------------------------------
-    //  FCFS — First Come, First Served
+    // FCFS — First Come, First Served
+    // super straightforward: we just process requests in the exact order they arrived
     // ----------------------------------------------------------------
     private List<Integer> fcfs(int[] queue, int head) {
         List<Integer> seq = new ArrayList<>();
@@ -54,7 +47,9 @@ public class DiskScheduler {
     }
 
     // ----------------------------------------------------------------
-    //  SSTF — Shortest Seek Time First
+    // SSTF — Shortest Seek Time First
+    // we greedily find whichever track is closest to our current head position
+    // our prof noted this can cause starvation for faraway requests, but it saves total seek time!
     // ----------------------------------------------------------------
     private List<Integer> sstf(int[] queue, int head) {
         List<Integer> remaining = new ArrayList<>();
@@ -80,35 +75,37 @@ public class DiskScheduler {
     }
 
     // ----------------------------------------------------------------
-    //  SCAN — Elevator Algorithm
+    // SCAN — Elevator Algorithm
+    // head moves all the way in one direction servicing tracks, hits the end, and reverses
+    // basically like an elevator picking people up on its way up, then reversing when it hits the top floor
     // ----------------------------------------------------------------
     private List<Integer> scan(int[] queue, int head, int cylinderLimit, boolean directionUp) {
         List<Integer> sorted = sortedCopy(queue);
         List<Integer> seq = new ArrayList<>();
 
         if (directionUp) {
-            // Service requests >= head going up, then hit end, then service remaining going down
+            // service everything >= head going up, then hit the outer disk limit
             for (int cyl : sorted) {
                 if (cyl >= head) seq.add(cyl);
             }
-            // Hit the end of the disk
-            if (seq.isEmpty() || seq.get(seq.size() - 1) != cylinderLimit - 1) {
-                seq.add(cylinderLimit - 1);
+            // we have to hit the physical disk boundary before turning around
+            if (seq.isEmpty() || seq.get(seq.size() - 1) != cylinderLimit) {
+                seq.add(cylinderLimit);
             }
-            // Reverse: service requests < head going down
+            // reverse direction: service everything < head going back down
             for (int i = sorted.size() - 1; i >= 0; i--) {
                 if (sorted.get(i) < head) seq.add(sorted.get(i));
             }
         } else {
-            // Service requests <= head going down, then hit 0, then service remaining going up
+            // service everything <= head going down, then hit track 0
             for (int i = sorted.size() - 1; i >= 0; i--) {
                 if (sorted.get(i) <= head) seq.add(sorted.get(i));
             }
-            // Hit cylinder 0
+            // hit cylinder 0 at the inner edge before turning back
             if (seq.isEmpty() || seq.get(seq.size() - 1) != 0) {
                 seq.add(0);
             }
-            // Forward: service requests > head going up
+            // reverse direction: service everything > head going back up
             for (int cyl : sorted) {
                 if (cyl > head) seq.add(cyl);
             }
@@ -117,33 +114,35 @@ public class DiskScheduler {
     }
 
     // ----------------------------------------------------------------
-    //  C-SCAN — Circular SCAN
+    // C-SCAN — Circular SCAN
+    // like SCAN, but treats cylinders as a circular list — when it hits the end,
+    // it jumps straight to the opposite end without servicing requests on the way back
     // ----------------------------------------------------------------
     private List<Integer> cscan(int[] queue, int head, int cylinderLimit, boolean directionUp) {
         List<Integer> sorted = sortedCopy(queue);
         List<Integer> seq = new ArrayList<>();
 
         if (directionUp) {
-            // Go up servicing requests, hit end, jump to 0, continue up
+            // go up servicing requests, hit the end, jump to 0, and continue up
             for (int cyl : sorted) {
                 if (cyl >= head) seq.add(cyl);
             }
-            if (seq.isEmpty() || seq.get(seq.size() - 1) != cylinderLimit - 1) {
-                seq.add(cylinderLimit - 1);
+            if (seq.isEmpty() || seq.get(seq.size() - 1) != cylinderLimit) {
+                seq.add(cylinderLimit);
             }
-            seq.add(0); // jump to beginning
+            seq.add(0); // jump straight to beginning without servicing anything
             for (int cyl : sorted) {
                 if (cyl < head) seq.add(cyl);
             }
         } else {
-            // Go down servicing requests, hit 0, jump to end, continue down
+            // go down servicing requests, hit 0, jump to max cylinder, and continue down
             for (int i = sorted.size() - 1; i >= 0; i--) {
                 if (sorted.get(i) <= head) seq.add(sorted.get(i));
             }
             if (seq.isEmpty() || seq.get(seq.size() - 1) != 0) {
                 seq.add(0);
             }
-            seq.add(cylinderLimit - 1); // jump to end
+            seq.add(cylinderLimit); // jump straight to the end
             for (int i = sorted.size() - 1; i >= 0; i--) {
                 if (sorted.get(i) > head) seq.add(sorted.get(i));
             }
@@ -152,7 +151,9 @@ public class DiskScheduler {
     }
 
     // ----------------------------------------------------------------
-    //  LOOK — Like SCAN but doesn't go to disk boundaries
+    // LOOK
+    // just like SCAN, but smarter! It only goes as far as the highest/lowest requested cylinder,
+    // so we don't waste time seeking all the way to the disk edge if nobody asked for it
     // ----------------------------------------------------------------
     private List<Integer> look(int[] queue, int head, boolean directionUp) {
         List<Integer> sorted = sortedCopy(queue);
@@ -177,7 +178,9 @@ public class DiskScheduler {
     }
 
     // ----------------------------------------------------------------
-    //  C-LOOK — Circular LOOK
+    // C-LOOK — Circular LOOK
+    // combines circular scanning with LOOK: goes only to the last request in that direction,
+    // then jumps directly to the lowest requested cylinder instead of going all the way to 0
     // ----------------------------------------------------------------
     private List<Integer> clook(int[] queue, int head, boolean directionUp) {
         List<Integer> sorted = sortedCopy(queue);
@@ -202,7 +205,7 @@ public class DiskScheduler {
     }
 
     // ----------------------------------------------------------------
-    //  Helpers
+    // our little helper functions
     // ----------------------------------------------------------------
     private List<Integer> sortedCopy(int[] queue) {
         List<Integer> list = new ArrayList<>();
@@ -211,6 +214,7 @@ public class DiskScheduler {
         return list;
     }
 
+    // this converts the raw sequence of numbers into nice step objects for our GUI table
     private List<SeekStep> buildSteps(int initialHead, List<Integer> sequence) {
         List<SeekStep> steps = new ArrayList<>();
         int prev = initialHead;
@@ -239,9 +243,8 @@ public class DiskScheduler {
         };
     }
 
-    /**
-     * Validate disk scheduling inputs.
-     */
+    // we added this input validation so bad user inputs don't crash the simulation
+    // checks for negative numbers, head out of bounds, empty queue, etc.
     public List<String> validate(int[] requestQueue, int initialHead, int cylinderLimit) {
         List<String> errors = new ArrayList<>();
         if (cylinderLimit <= 0) {
@@ -250,8 +253,8 @@ public class DiskScheduler {
         if (initialHead < 0) {
             errors.add("Initial head position cannot be negative.");
         }
-        if (cylinderLimit > 0 && initialHead >= cylinderLimit) {
-            errors.add("Initial head (" + initialHead + ") must be less than cylinder limit (" + cylinderLimit + ").");
+        if (cylinderLimit > 0 && initialHead > cylinderLimit) {
+            errors.add("Initial head (" + initialHead + ") must be within cylinder limit (" + cylinderLimit + ").");
         }
         if (requestQueue == null || requestQueue.length == 0) {
             errors.add("Request queue must have at least one entry.");
@@ -259,7 +262,7 @@ public class DiskScheduler {
             for (int i = 0; i < requestQueue.length; i++) {
                 if (requestQueue[i] < 0) {
                     errors.add("Request " + (i + 1) + ": cylinder cannot be negative.");
-                } else if (cylinderLimit > 0 && requestQueue[i] >= cylinderLimit) {
+                } else if (cylinderLimit > 0 && requestQueue[i] > cylinderLimit) {
                     errors.add("Request " + (i + 1) + ": cylinder " + requestQueue[i]
                             + " exceeds limit (" + cylinderLimit + ").");
                 }

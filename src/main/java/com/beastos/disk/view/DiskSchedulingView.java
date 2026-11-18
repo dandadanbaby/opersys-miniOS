@@ -359,7 +359,7 @@ public class DiskSchedulingView extends ScrollPane {
             List<Integer> parsed = new ArrayList<>();
             for (String p : parts) {
                 String s = p.trim();
-                if (!s.isEmpty()) parsed.add(Integer.valueOf(s));
+                if (!s.isEmpty()) parsed.add(Integer.parseInt(s));
             }
             queue = parsed.stream().mapToInt(Integer::intValue).toArray();
         } catch (NumberFormatException e) {

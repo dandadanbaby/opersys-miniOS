@@ -5,11 +5,10 @@ import com.beastos.cpu.model.Process;
 
 import java.util.*;
 
-/**
- * Priority CPU Scheduling Algorithm.
- * Non-preemptive. Lower priority number = higher priority.
- * Tie-breaking: earliest arrival, then lowest PID.
- */
+// here's our implementation of non-preemptive Priority Scheduling!
+// our prof explained that lower numbers mean higher priority (like 1st place > 2nd place).
+// since this version is non-preemptive, once a process gets CPU time, it holds onto it until it's done.
+// if two jobs tie on priority, we pick whoever arrived first, and if that's also a tie, we sort by PID.
 public class PriorityScheduler implements CpuScheduler {
 
     @Override
@@ -17,13 +16,15 @@ public class PriorityScheduler implements CpuScheduler {
 
     @Override
     public SchedulingOutput schedule(List<Process> processes) {
+        // we make a copy so we don't accidentally mutate the input list
         List<Process> remaining = new ArrayList<>(processes);
         List<GanttEntry> gantt = new ArrayList<>();
         List<SchedulingResult> results = new ArrayList<>();
         int currentTime = 0;
 
+        // keep going until every single process has run
         while (!remaining.isEmpty()) {
-            // Find arrived processes
+            // find all the processes that have actually arrived by currentTime
             List<Process> available = new ArrayList<>();
             for (Process p : remaining) {
                 if (p.getArrivalTime() <= currentTime) {
@@ -31,6 +32,8 @@ public class PriorityScheduler implements CpuScheduler {
                 }
             }
 
+            // if nothing has arrived yet, the CPU is stuck waiting (idle)
+            // so we skip time ahead to the next arrival and add an IDLE block to our Gantt chart
             if (available.isEmpty()) {
                 int nextArrival = remaining.stream()
                         .mapToInt(Process::getArrivalTime).min().orElse(currentTime);
@@ -39,18 +42,22 @@ public class PriorityScheduler implements CpuScheduler {
                 continue;
             }
 
-            // Select by priority (lowest number = highest priority)
+            // sort available jobs: smallest priority number first, then arrival time, then PID
             available.sort(Comparator.comparingInt(Process::getPriority)
                     .thenComparingInt(Process::getArrivalTime)
                     .thenComparing(Process::getPid));
 
+            // grab the winner with the highest priority and remove it from remaining
             Process selected = available.get(0);
             remaining.remove(selected);
 
+            // since it's non-preemptive, it runs completely to the end
+            // response time is just start time minus arrival time
             int startTime = currentTime;
             int completionTime = currentTime + selected.getBurstTime();
             int responseTime = startTime - selected.getArrivalTime();
 
+            // add this process's execution block to the Gantt chart and save its metrics
             gantt.add(new GanttEntry(selected.getPid(), startTime, completionTime));
             results.add(new SchedulingResult(
                     selected.getPid(), selected.getArrivalTime(), selected.getBurstTime(),
@@ -60,6 +67,7 @@ public class PriorityScheduler implements CpuScheduler {
             currentTime = completionTime;
         }
 
+        // quantum is 0 here since Priority doesn't use time slices like Round Robin
         return new SchedulingOutput(getAlgorithmName(), 0, results, gantt);
     }
 }

@@ -2,28 +2,31 @@ package com.beastos.cpu.model;
 
 import java.util.List;
 
-/**
- * Complete output of a CPU scheduling algorithm execution.
- */
+// this class is basically our big bundle of everything a scheduling algorithm produces!
+// once an algorithm finishes running, it packs up the per-process stats, the Gantt chart timeline,
+// and we compute the big summary metrics (average WT, TAT, RT, and CPU utilization) right in the constructor
+// so the UI can just grab this object and display the entire results screen easily.
 public class SchedulingOutput {
     private final String algorithmName;
-    private final int timeQuantum; // 0 if not applicable
+    private final int timeQuantum; // we set this to 0 if the algorithm doesn't use time slices (like FCFS or SJF)
     private final List<SchedulingResult> results;
     private final List<GanttEntry> ganttChart;
     private final double averageWaitingTime;
     private final double averageTurnaroundTime;
     private final double averageResponseTime;
-    private final double cpuUtilization; // percentage
+    private final double cpuUtilization; // percentage of time the CPU was actually working (not idle)
     private final int totalTime;
 
     public SchedulingOutput(String algorithmName, int timeQuantum,
                             List<SchedulingResult> results, List<GanttEntry> ganttChart) {
         this.algorithmName = algorithmName;
         this.timeQuantum = timeQuantum;
+        // we make unmodifiable copies so the chart data and results can't get accidentally modified later
         this.results = List.copyOf(results);
         this.ganttChart = List.copyOf(ganttChart);
 
-        // Calculate averages
+        // basically what happens here is we loop through each process result and sum up
+        // the waiting time, turnaround time, and response time so we can calculate class averages
         double sumWT = 0, sumTAT = 0, sumRT = 0;
         for (SchedulingResult r : results) {
             sumWT += r.getWaitingTime();
@@ -31,11 +34,14 @@ public class SchedulingOutput {
             sumRT += r.getResponseTime();
         }
         int n = results.size();
+        // we check if n > 0 so we don't crash from dividing by zero if the list was empty lol
         this.averageWaitingTime = n > 0 ? sumWT / n : 0;
         this.averageTurnaroundTime = n > 0 ? sumTAT / n : 0;
         this.averageResponseTime = n > 0 ? sumRT / n : 0;
 
-        // Calculate CPU utilization and total time
+        // here we figure out the total simulation time and CPU utilization.
+        // we scan the Gantt chart to find when the CPU finished everything and how much time was spent idle.
+        // formula from our OS class: CPU utilization = ((total time - idle time) / total time) * 100%
         int lastEnd = 0;
         int idleTime = 0;
         for (GanttEntry g : ganttChart) {

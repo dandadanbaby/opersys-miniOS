@@ -13,52 +13,52 @@ import javafx.scene.layout.*;
 
 import java.util.List;
 
-/**
- * Banker's Algorithm module view for BEAST OS.
- * Matches the supplied design reference: stat cards, three matrices
- * (Allocation, Max Demand, Need), available vector, and verification log.
+/* our banker's algorithm UI screen!
+ * basically this is where we visualize dijkstra's banker's algorithm for deadlock avoidance.
+ * we designed the layout with quick stat cards up top, the 3 key matrices side-by-side in the middle
+ * (allocation, max, and need), and the available resources + step-by-step verification log at the bottom.
  */
 public class BankerView extends ScrollPane {
 
     private static final SimulationSession session = SimulationSession.getInstance();
     private static final BankerEngine engine = new BankerEngine();
 
-    // Configuration
+    // we defaulted to 5 processes and 3 resources (A, B, C) because that matches the exact example from our OS lecture slides
     private int numProcesses = 5;
     private int numResources = 3;
 
-    // Config controls
+    // spinners so users can test custom matrix sizes instead of just the fixed 5x3 textbook one
     private final Spinner<Integer> processSpinner = new Spinner<>(1, 50, 5);
-    private final Spinner<Integer> resourceSpinner = new Spinner<>(1, 26, 3); // max 26 for A-Z
+    private final Spinner<Integer> resourceSpinner = new Spinner<>(1, 26, 3); // capped at 26 because we label resources with letters A through Z
 
-    // Matrices — 2D arrays of TextFields
+    // 2D grid arrays for the UI fields — need is read-only labels because we calculate Need = Max - Allocation automatically
     private TextField[][] allocationFields;
     private TextField[][] maxFields;
     private Label[][] needLabels;
     private TextField[] availableFields;
 
-    // Matrix containers (rebuilt on config change)
+    // vertical boxes holding the matrix rows — we wipe and redraw these whenever someone changes the spinner counts
     private final VBox allocationMatrix = new VBox(4);
     private final VBox maxMatrix = new VBox(4);
     private final VBox needMatrix = new VBox(4);
     private final HBox availableRow = new HBox(8);
 
-    // Stat card labels
+    // top stat card labels so the user sees whether the system is safe and the sequence without scrolling down
     private final Label processCountValue = new Label("05");
     private final Label resourceCountValue = new Label("03");
     private final Label systemStatusValue = new Label("—");
     private final Label safeSequenceValue = new Label("—");
 
-    // Verification log
+    // these components show the step-by-step breakdown of how the safety algorithm reached its verdict
     private final VBox verificationLog = new VBox(4);
     private final Label statusBanner = new Label();
     private final Label availableDisplay = new Label("Initial Available [—]");
     private final Label systemMaxDisplay = new Label("System Max —");
 
-    // Error label
+    // shows error messages if someone enters negative numbers, letters, or allocation > max
     private final Label errorLabel = new Label();
 
-    // Main content container
+    // main scrollable container stacking all our UI sections vertically with nice clean spacing
     private final VBox contentBox = new VBox(20);
 
     public BankerView() {
@@ -77,12 +77,14 @@ public class BankerView extends ScrollPane {
         setHbarPolicy(ScrollBarPolicy.NEVER);
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
 
-        // Build initial matrices and run safety check
+        // initialize the 5x3 grids, fill in the sample problem from class, and run it right away so the UI isn't blank
         rebuildMatrices();
         loadDefaultData();
         runSafetyCheck();
     }
 
+    // we hardcoded the classic Silberschatz textbook example (P0-P4 with resources A, B, C)
+    // so the professor or TA testing this doesn't have to manually type 33 numbers every single run lol
     private void loadDefaultData() {
         int[][] defaultAlloc = {
             {0, 1, 0},
@@ -111,9 +113,7 @@ public class BankerView extends ScrollPane {
         }
     }
 
-    // ----------------------------------------------------------------
-    //  Header
-    // ----------------------------------------------------------------
+    // builds the top title bar with the module name and a "New Simulation" button to reset everything
     private VBox createHeader() {
         Label tag = new Label("OPERATING SYSTEM WORKBENCH");
         tag.getStyleClass().add("content-section-tag");
@@ -139,9 +139,7 @@ public class BankerView extends ScrollPane {
         return new VBox(2, tag, titleRow, subtitle, desc);
     }
 
-    // ----------------------------------------------------------------
-    //  Stat Cards
-    // ----------------------------------------------------------------
+    // we put 4 quick summary cards here so you can immediately see process/resource counts, SAFE/UNSAFE, and the sequence
     private HBox createStatCards() {
         VBox card1 = buildStatCard("PROCESSES", processCountValue, "#22c55e", "Active process count");
         VBox card2 = buildStatCard("RESOURCE TYPES", resourceCountValue, "#3b82f6", "Vector dimension (A-C)");
@@ -161,6 +159,7 @@ public class BankerView extends ScrollPane {
         return row;
     }
 
+    // helper to make each stat card look uniform with a title, big value, status dot, and subtitle
     private VBox buildStatCard(String labelText, Label valueLabel, String accentColor, String descText) {
         Label cardLabel = new Label(labelText);
         cardLabel.getStyleClass().add("stat-card-label");
@@ -184,9 +183,7 @@ public class BankerView extends ScrollPane {
         return card;
     }
 
-    // ----------------------------------------------------------------
-    //  Configuration Row
-    // ----------------------------------------------------------------
+    // this row lets the user pick how many processes and resources they want and click apply to resize the grids
     private HBox createConfigRow() {
         Label pLabel = new Label("Number of Processes:");
         pLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #94a3b8;");
@@ -214,9 +211,7 @@ public class BankerView extends ScrollPane {
         return row;
     }
 
-    // ----------------------------------------------------------------
-    //  Three Matrices Side by Side
-    // ----------------------------------------------------------------
+    // we placed all three matrices side-by-side in a horizontal row so you can easily compare Allocation vs Max vs Need
     private HBox createMatricesRow() {
         VBox allocPanel = wrapMatrixPanel("Allocation Matrix", allocationMatrix);
         VBox maxPanel = wrapMatrixPanel("Max Demand Matrix", maxMatrix);
@@ -231,6 +226,7 @@ public class BankerView extends ScrollPane {
         return row;
     }
 
+    // wraps each matrix in a dark styled card container with a title up top
     private VBox wrapMatrixPanel(String title, VBox matrixContainer) {
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("panel-title");
@@ -241,13 +237,14 @@ public class BankerView extends ScrollPane {
         return panel;
     }
 
+    // completely redraws all the input grids whenever the number of processes or resources changes
     private void rebuildMatrices() {
         allocationFields = new TextField[numProcesses][numResources];
         maxFields = new TextField[numProcesses][numResources];
         needLabels = new Label[numProcesses][numResources];
         availableFields = new TextField[numResources];
 
-        // Rebuild Allocation Matrix
+        // generate input fields for the Allocation matrix (what processes currently hold)
         allocationMatrix.getChildren().clear();
         allocationMatrix.getChildren().add(createResourceHeaders());
         for (int i = 0; i < numProcesses; i++) {
@@ -255,7 +252,7 @@ public class BankerView extends ScrollPane {
             allocationMatrix.getChildren().add(row);
         }
 
-        // Rebuild Max Matrix
+        // generate input fields for the Max Demand matrix (maximum each process can request)
         maxMatrix.getChildren().clear();
         maxMatrix.getChildren().add(createResourceHeaders());
         for (int i = 0; i < numProcesses; i++) {
@@ -263,7 +260,7 @@ public class BankerView extends ScrollPane {
             maxMatrix.getChildren().add(row);
         }
 
-        // Rebuild Need Matrix (read-only)
+        // generate labels for the Need matrix — these are read-only because Need = Max - Allocation
         needMatrix.getChildren().clear();
         needMatrix.getChildren().add(createResourceHeaders());
         for (int i = 0; i < numProcesses; i++) {
@@ -271,18 +268,19 @@ public class BankerView extends ScrollPane {
             needMatrix.getChildren().add(row);
         }
 
-        // Rebuild Available vector
+        // input fields for the Available vector (how many free instances of each resource currently exist)
         availableRow.getChildren().clear();
         for (int j = 0; j < numResources; j++) {
             Label resLabel = new Label(resourceName(j) + ":");
             resLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #2dd4bf; -fx-font-weight: bold;");
-            TextField field = new TextField("0");
+            TextField field = new TextField();
             field.setPrefWidth(50);
+            field.setPromptText("0");
             availableFields[j] = field;
             availableRow.getChildren().addAll(resLabel, field);
         }
 
-        // Add listeners to update Need on input change
+        // we added listeners to every single cell so the Need matrix recalculates on the fly as you type!
         for (int i = 0; i < numProcesses; i++) {
             final int pi = i;
             for (int j = 0; j < numResources; j++) {
@@ -292,7 +290,7 @@ public class BankerView extends ScrollPane {
             }
         }
 
-        // Reset displays
+        // clear out any old run results so stale data doesn't confuse anyone
         systemStatusValue.setText("—");
         systemStatusValue.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #64748b;");
         safeSequenceValue.setText("—");
@@ -304,6 +302,7 @@ public class BankerView extends ScrollPane {
         errorLabel.setText("");
     }
 
+    // draws resource column headers (A, B, C...) with a blank spacer so they align over the input columns
     private HBox createResourceHeaders() {
         Label spacer = new Label("");
         spacer.setPrefWidth(36);
@@ -321,6 +320,7 @@ public class BankerView extends ScrollPane {
         return row;
     }
 
+    // builds one row of text inputs for process Pi with a label on the left
     private HBox createMatrixInputRow(int processIndex, TextField[][] targetArray) {
         Label pLabel = new Label("P" + processIndex);
         pLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #2dd4bf; -fx-font-weight: bold;");
@@ -330,16 +330,18 @@ public class BankerView extends ScrollPane {
         row.setAlignment(Pos.CENTER_LEFT);
 
         for (int j = 0; j < numResources; j++) {
-            TextField field = new TextField("0");
+            TextField field = new TextField();
             field.setPrefWidth(50);
             field.setAlignment(Pos.CENTER);
             field.setStyle("-fx-font-size: 12px;");
+            field.setPromptText("0");
             targetArray[processIndex][j] = field;
             row.getChildren().add(field);
         }
         return row;
     }
 
+    // builds one row of non-editable labels for the Need matrix
     private HBox createNeedRow(int processIndex) {
         Label pLabel = new Label("P" + processIndex);
         pLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #2dd4bf; -fx-font-weight: bold;");
@@ -349,7 +351,7 @@ public class BankerView extends ScrollPane {
         row.setAlignment(Pos.CENTER_LEFT);
 
         for (int j = 0; j < numResources; j++) {
-            Label label = new Label("0");
+            Label label = new Label("");
             label.setPrefWidth(50);
             label.setAlignment(Pos.CENTER);
             label.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8; " +
@@ -361,6 +363,7 @@ public class BankerView extends ScrollPane {
         return row;
     }
 
+    // calculates Need = Max - Allocation for cell [i][j]; we highlight it red if Need < 0 because that violates OS rules!
     private void updateNeedCell(int i, int j) {
         try {
             int alloc = parseIntSafe(allocationFields[i][j].getText());
@@ -381,14 +384,12 @@ public class BankerView extends ScrollPane {
         }
     }
 
-    // ----------------------------------------------------------------
-    //  Bottom Section — Available Vector + Verification Log
-    // ----------------------------------------------------------------
+    // bottom panel: Available resource vector on the left, step-by-step verification log on the right
     private VBox createBottomSection() {
         Label sectionTitle = new Label("Available Vector & Safety Verification Log");
         sectionTitle.getStyleClass().add("panel-title");
 
-        // Left: Available vector input + info
+        // left column: inputs for available resources plus calculated system totals
         Label avLabel = new Label("Resource Available Vector");
         avLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #f8fafc;");
         availableDisplay.setStyle("-fx-font-size: 13px; -fx-text-fill: #94a3b8; -fx-padding: 4 0 4 0;");
@@ -398,7 +399,7 @@ public class BankerView extends ScrollPane {
         leftSection.setMinWidth(280);
         leftSection.setPrefWidth(320);
 
-        // Right: Verification log
+        // right column: scrollable log showing exactly how the safety algorithm tests each process
         Label logLabel = new Label("Execution Verification Log");
         logLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #f8fafc;");
 
@@ -418,7 +419,7 @@ public class BankerView extends ScrollPane {
 
         HBox content = new HBox(20, leftSection, rightSection);
 
-        // Error label
+        // red warning banner at the bottom for any input validation errors
         errorLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 12px; -fx-wrap-text: true;");
         errorLabel.setWrapText(true);
 
@@ -427,9 +428,7 @@ public class BankerView extends ScrollPane {
         return panel;
     }
 
-    // ----------------------------------------------------------------
-    //  Button Row
-    // ----------------------------------------------------------------
+    // action buttons to either evaluate the matrices or reset back to default
     private HBox createButtonRow() {
         Button runBtn = new Button("Run Safety Check");
         runBtn.getStyleClass().add("btn-accent");
@@ -444,14 +443,13 @@ public class BankerView extends ScrollPane {
         return row;
     }
 
-    // ----------------------------------------------------------------
-    //  Safety Check Execution
-    // ----------------------------------------------------------------
+    /* this is the main action: we pull all numbers from the UI, validate everything,
+       and pass them to BankerEngine to find a safe sequence */
     private void runSafetyCheck() {
         errorLabel.setText("");
         verificationLog.getChildren().clear();
 
-        // Parse matrices
+        // step 1: read all values from the text fields and convert them into 2D int arrays
         int[][] allocation = new int[numProcesses][numResources];
         int[][] maximum = new int[numProcesses][numResources];
         int[] available = new int[numResources];
@@ -474,21 +472,21 @@ public class BankerView extends ScrollPane {
             return;
         }
 
-        // Validate using engine
+        // step 2: make sure basic OS rules aren't broken (e.g. Allocation can't be greater than Max)
         List<String> errors = engine.validate(allocation, maximum, available);
         if (!errors.isEmpty()) {
             errorLabel.setText(String.join("\n", errors));
             return;
         }
 
-        // Run safety check
+        // step 3: run the safety check algorithm using our BankerState model and BankerEngine
         session.setSimulationState(SimulationState.RUNNING);
         BankerState state = new BankerState(allocation, maximum, available);
         SafetyResult result = engine.checkSafety(state);
         session.setSimulationState(SimulationState.COMPLETED);
         session.incrementSimulationsCompleted();
 
-        // Update stat cards
+        // step 4: update the stat cards so the user sees SAFE/UNSAFE and the sequence right away
         processCountValue.setText(String.format("%02d", numProcesses));
         resourceCountValue.setText(String.format("%02d", numResources));
 
@@ -507,7 +505,7 @@ public class BankerView extends ScrollPane {
             safeSequenceValue.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #ef4444;");
         }
 
-        // Update available display
+        // step 5: format and display the initial available vector in the log panel
         StringBuilder avStr = new StringBuilder("Initial Available [");
         for (int j = 0; j < numResources; j++) {
             if (j > 0) avStr.append(" | ");
@@ -516,7 +514,7 @@ public class BankerView extends ScrollPane {
         avStr.append("]");
         availableDisplay.setText(avStr.toString());
 
-        // System max
+        // step 6: show total resources in the entire system (Available + sum of all Allocations)
         int[] totalResources = state.getTotalResources();
         StringBuilder maxStr = new StringBuilder("System Max ");
         for (int j = 0; j < numResources; j++) {
@@ -525,7 +523,7 @@ public class BankerView extends ScrollPane {
         }
         systemMaxDisplay.setText(maxStr.toString());
 
-        // Update Need matrix display
+        // step 7: sync the calculated Need values back into the Need matrix labels
         int[][] need = state.getNeed();
         for (int i = 0; i < numProcesses; i++) {
             for (int j = 0; j < numResources; j++) {
@@ -533,7 +531,7 @@ public class BankerView extends ScrollPane {
             }
         }
 
-        // Build verification log
+        // step 8: write out each step in the log so students can trace along with how work vector updates
         for (SafetyResult.SafetyStep step : result.getSteps()) {
             Label stepLabel = new Label(step.getDescription());
             stepLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8; " +
@@ -543,7 +541,7 @@ public class BankerView extends ScrollPane {
             verificationLog.getChildren().add(stepLabel);
         }
 
-        // Status banner
+        // step 9: show a clear colored banner (green if safe, red if unsafe with deadlocked processes)
         if (result.isSafe()) {
             statusBanner.setText("Safety check complete. System is in a SAFE STATE.");
             statusBanner.setStyle("-fx-font-size: 13px; -fx-text-fill: #22c55e; -fx-font-weight: bold; " +
@@ -556,6 +554,7 @@ public class BankerView extends ScrollPane {
         }
     }
 
+    // wipes all fields, rebuilds the matrices based on current spinner counts, and resets state
     private void resetAll() {
         numProcesses = processSpinner.getValue();
         numResources = resourceSpinner.getValue();
@@ -565,13 +564,13 @@ public class BankerView extends ScrollPane {
         session.setSimulationState(SimulationState.IDLE);
     }
 
-    // ----------------------------------------------------------------
-    //  Helpers
-    // ----------------------------------------------------------------
+    // helper methods for parsing text inputs and converting column numbers to resource letters
+    // helper to turn resource index 0 into 'A', 1 into 'B', etc. by casting chars
     private static String resourceName(int index) {
         return String.valueOf((char) ('A' + index));
     }
 
+    // helper to parse integer inputs — blanks default to 0, and negatives throw an exception
     private int parseAndValidate(TextField field, String name) throws ValidationException {
         String text = field.getText().trim();
         if (text.isEmpty()) return 0;
@@ -586,11 +585,13 @@ public class BankerView extends ScrollPane {
         }
     }
 
+    // safely parse numbers for the live Need calculation without crashing on empty inputs
     private int parseIntSafe(String text) {
         if (text == null || text.isBlank()) return 0;
         return Integer.parseInt(text.trim());
     }
 
+    // custom exception we throw when someone types invalid text so we can catch it and show an error banner
     private static class ValidationException extends Exception {
         ValidationException(String message) { super(message); }
     }

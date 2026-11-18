@@ -1,8 +1,7 @@
 package com.beastos.cpu.model;
 
-/**
- * Per-process scheduling result with all computed metrics.
- */
+// this class holds all the final scheduling stats for a single process after the CPU finishes running it.
+// we store the input specs plus the computed times so we can display them in our results table.
 public class SchedulingResult {
     private final String pid;
     private final int arrivalTime;
@@ -20,6 +19,9 @@ public class SchedulingResult {
         this.burstTime = burstTime;
         this.priority = priority;
         this.completionTime = completionTime;
+        // standard formulas we learned in OS class:
+        // turnaround time = completion - arrival (total time from entry to finish)
+        // waiting time = turnaround - burst (total time spent just waiting around)
         this.turnaroundTime = completionTime - arrivalTime;
         this.waitingTime = turnaroundTime - burstTime;
         this.responseTime = responseTime;

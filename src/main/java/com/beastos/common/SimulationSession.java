@@ -7,11 +7,10 @@ import javafx.collections.ObservableList;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Tracks the global simulation session state for the BEAST OS dashboard.
- * All dashboard statistics are derived from this session data.
- *
- * Singleton — one session per application lifecycle.
+/*
+ * We made this class a singleton so our entire app shares the exact same
+ * simulation state. Basically, all the live dashboard stats (like CPU load,
+ * RAM in use, and active processes) pull from here so everything stays in sync across tabs.
  */
 public class SimulationSession {
 
@@ -20,16 +19,16 @@ public class SimulationSession {
     private final IntegerProperty activeProcesses = new SimpleIntegerProperty(0);
     private final DoubleProperty cpuUtilization = new SimpleDoubleProperty(0.0);
     private final DoubleProperty memoryInUse = new SimpleDoubleProperty(0.0);
-    private final DoubleProperty totalMemory = new SimpleDoubleProperty(8.0); // GB, modeled
+    private final DoubleProperty totalMemory = new SimpleDoubleProperty(8.0); // we're modeling a system with 8 GB of total RAM
     private final IntegerProperty simulationsCompleted = new SimpleIntegerProperty(0);
     private final DoubleProperty resourceUtilization = new SimpleDoubleProperty(0.0);
     private final ObjectProperty<SimulationState> simulationState =
             new SimpleObjectProperty<>(SimulationState.IDLE);
 
-    // Last CPU scheduling result for dashboard Gantt
+    // we keep the latest CPU scheduling run here so our main dashboard can draw its Gantt chart
     private final ObjectProperty<Object> lastCpuResult = new SimpleObjectProperty<>(null);
 
-    // Live list of active process names (e.g. "P1", "P2", "P3", ...)
+    // live list of running process names (like "P1", "P2") — using ObservableList so the JavaFX UI updates automatically
     private final ObservableList<String> activeProcessNames = FXCollections.observableArrayList();
 
     private SimulationSession() {}
@@ -58,12 +57,28 @@ public class SimulationSession {
 
     public void initDefaultProcesses(List<String> defaultNames) {
         activeProcessNames.setAll(defaultNames);
-        activeProcesses.set(activeProcessNames.size());
+        int count = activeProcessNames.size();
+        activeProcesses.set(count);
+
+        // we scale the initial metrics proportionally based on how many processes are loaded
+        if (count > 0) {
+            double dynamicCpu = Math.min(99.0, Math.max(12.0, count * 11.4 + 4.0));
+            cpuUtilization.set(Math.round(dynamicCpu * 10.0) / 10.0);
+
+            double dynamicMem = Math.min(totalMemory.get(), Math.max(1.10, count * 0.64 + 1.10));
+            memoryInUse.set(Math.round(dynamicMem * 100.0) / 100.0);
+
+            double dynamicRes = Math.min(95.0, Math.max(8.0, count * 6.0 + 2.0));
+            resourceUtilization.set(Math.round(dynamicRes * 10.0) / 10.0);
+
+            simulationState.set(SimulationState.RUNNING);
+        }
     }
 
-    /**
-     * Terminate / kill a running process by PID live.
-     * Updates active processes count, CPU, RAM, and triggers live UI refresh.
+    /*
+     * This is where we kill a running process by its PID live!
+     * We drop it from our list and recalculate CPU and RAM usage right away
+     * so the dashboard reflects the change immediately.
      */
     public void killProcess(String pid) {
         boolean removed = activeProcessNames.removeIf(p -> p.equalsIgnoreCase(pid));
@@ -72,8 +87,8 @@ public class SimulationSession {
             activeProcesses.set(newCount);
 
             if (newCount == 0) {
-                cpuUtilization.set(4.0); // Baseline idle kernel load
-                memoryInUse.set(1.10);   // Baseline kernel OS RAM
+                cpuUtilization.set(4.0); // baseline idle CPU load just for our mini kernel background tasks
+                memoryInUse.set(1.10);   // baseline kernel OS RAM in GB
                 resourceUtilization.set(5.0);
                 simulationState.set(SimulationState.IDLE);
             } else {
@@ -92,9 +107,10 @@ public class SimulationSession {
         }
     }
 
-    /**
-     * Spawn a new process live.
-     * Generates a new unique PID and refreshes metrics live.
+    /*
+     * Spawns a new process live!
+     * We loop to find the next free PID number (like "P1", "P2"...) so we don't get duplicate IDs,
+     * add it to our active list, and bump up the simulated system load.
      */
     public void spawnProcess() {
         int nextNum = 1;
@@ -163,13 +179,13 @@ public class SimulationSession {
     public ObjectProperty<Object> lastCpuResultProperty() { return lastCpuResult; }
     public void setLastCpuResult(Object result) { lastCpuResult.set(result); }
 
-    /** Memory utilization as percentage. */
+    // quick helper we wrote to calculate memory usage as a percentage (used / total * 100)
     public double getMemoryPercent() {
         if (totalMemory.get() <= 0) return 0;
         return (memoryInUse.get() / totalMemory.get()) * 100.0;
     }
 
-    /** Reset all session data. */
+    // resets all our session counters and metrics back to startup defaults
     public void reset() {
         activeProcessNames.clear();
         activeProcesses.set(0);

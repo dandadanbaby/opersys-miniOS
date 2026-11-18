@@ -296,7 +296,6 @@ public class SegmentationView extends ScrollPane {
 
         if (segments.isEmpty()) { drawEmptyMemoryMap(); return; }
 
-        // Sort by base address for drawing
         List<Segment> sorted = new ArrayList<>(segments);
         sorted.sort(Comparator.comparingInt(Segment::getBase));
 
@@ -304,31 +303,69 @@ public class SegmentationView extends ScrollPane {
         for (Segment s : sorted) maxAddr = Math.max(maxAddr, s.getBase() + s.getLimit());
         if (maxAddr == 0) maxAddr = 1;
 
-        double leftMargin = 50;
-        double chartW = w - leftMargin - 20;
-        double barH = 30;
+        double leftMargin = 14;
+        double rightMargin = 14;
+        double topMargin = 6;
+        double axisHeight = 28;
+        double chartW = w - leftMargin - rightMargin;
 
-        for (int i = 0; i < sorted.size(); i++) {
-            Segment seg = sorted.get(i);
-            double y = 10 + i * (barH + 8);
+        // The bar fills most of the vertical space
+        double barH = h - topMargin - axisHeight - 6;
+        if (barH < 40) barH = 40;
+
+        // --- Full-width memory bar background ---
+        gc.setFill(Color.web("#0f172a"));
+        gc.fillRoundRect(leftMargin, topMargin, chartW, barH, 8, 8);
+
+        // Border
+        gc.setStroke(Color.web("#1e293b"));
+        gc.setLineWidth(1);
+        gc.strokeRoundRect(leftMargin, topMargin, chartW, barH, 8, 8);
+
+        // --- Draw segments ---
+        for (Segment seg : sorted) {
             double x = leftMargin + (chartW * seg.getBase() / maxAddr);
-            double bw = chartW * seg.getLimit() / maxAddr;
+            double bw = Math.max(chartW * seg.getLimit() / maxAddr, 4);
 
-            // Address label
-            gc.setFill(Color.web("#94a3b8"));
-            gc.setFont(Font.font("Segoe UI", 10));
-            gc.fillText(String.valueOf(seg.getBase()), leftMargin - 5, y + barH / 2 + 4);
-
-            // Segment bar
             Color color = SEG_COLORS[seg.getSegmentNumber() % SEG_COLORS.length];
-            gc.setFill(color);
-            gc.fillRoundRect(x, y, Math.max(bw, 8), barH, 4, 4);
 
-            // Label inside bar
-            gc.setFill(Color.web("#f8fafc"));
-            gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 10));
-            String label = "Seg " + seg.getSegmentNumber() + " [Base " + seg.getBase() + ", Limit " + seg.getLimit() + "]";
-            if (bw > 80) gc.fillText(label, x + 4, y + barH / 2 + 4);
+            // Segment block
+            gc.setFill(color);
+            gc.fillRoundRect(x, topMargin + 1, bw, barH - 2, 4, 4);
+
+            // Label: "Seg N" centered, with base–end below in smaller text
+            gc.setFill(Color.web("#0b1019"));
+            gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+            String name = "Seg " + seg.getSegmentNumber();
+            if (bw > 50) {
+                gc.fillText(name, x + (bw - name.length() * 7) / 2, topMargin + barH / 2 - 2);
+                gc.setFont(Font.font("Segoe UI", 9));
+                String range = seg.getBase() + "–" + (seg.getBase() + seg.getLimit());
+                gc.fillText(range, x + (bw - range.length() * 5) / 2, topMargin + barH / 2 + 12);
+            } else if (bw > 20) {
+                gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 9));
+                gc.fillText("S" + seg.getSegmentNumber(), x + (bw - 10) / 2, topMargin + barH / 2 + 4);
+            }
+        }
+
+        // --- Horizontal axis ---
+        double axisY = topMargin + barH + 4;
+        gc.setStroke(Color.web("#334155"));
+        gc.setLineWidth(1);
+        gc.strokeLine(leftMargin, axisY, leftMargin + chartW, axisY);
+
+        // Even tick marks along the axis (5 ticks)
+        int tickCount = 5;
+        gc.setFont(Font.font("Segoe UI", 9));
+        gc.setFill(Color.web("#64748b"));
+        for (int i = 0; i <= tickCount; i++) {
+            double x = leftMargin + (chartW * i / tickCount);
+            int addrVal = Math.round((float) maxAddr * i / tickCount);
+            gc.setStroke(Color.web("#475569"));
+            gc.strokeLine(x, axisY, x, axisY + 4);
+            String label = String.valueOf(addrVal);
+            gc.setFill(Color.web("#64748b"));
+            gc.fillText(label, x - label.length() * 3, axisY + 16);
         }
     }
 

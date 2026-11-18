@@ -1,8 +1,8 @@
 package com.beastos.common;
 
-/**
- * Represents the simulation status of the BEAST OS application.
- */
+// we created this enum to keep track of what our simulation is currently doing.
+// basically, it tells the UI whether we're waiting for inputs (IDLE), set up and good to go (READY),
+// actively running the algorithms (RUNNING), paused mid-step (PAUSED), or done with everything (COMPLETED)
 public enum SimulationState {
     IDLE("IDLE"),
     READY("READY"),

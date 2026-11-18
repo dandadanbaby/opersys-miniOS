@@ -1,11 +1,10 @@
 package com.beastos.cpu.model;
 
-/**
- * A single entry in the Gantt chart timeline.
- * Represents one continuous execution block.
- */
+// this is where we represent a single block on our Gantt chart timeline.
+// basically what happens here is whenever a process gets the CPU (or if the CPU is just sitting idle),
+// we save who ran, when it started, and when it finished so we can draw each colored slice in the UI later!
 public class GanttEntry {
-    private final String pid;  // process ID, or "IDLE" for CPU idle
+    private final String pid; // process ID, or "IDLE" if the CPU was doing nothing
     private final int startTime;
     private final int endTime;
 

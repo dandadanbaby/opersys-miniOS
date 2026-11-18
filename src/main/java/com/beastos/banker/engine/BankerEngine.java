@@ -8,22 +8,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Banker's Safety Algorithm implementation.
- * Pure Java — no JavaFX dependency.
+/*
+ * Our implementation of the Banker's Safety Algorithm!
+ * We kept this pure Java with no JavaFX stuff so it's strictly the algorithm logic.
  *
- * Algorithm:
- * 1. Work = Available, Finish[i] = false for all i
- * 2. Find process i where Finish[i] == false AND Need[i] <= Work
- *    (tie-breaking: lowest index first)
- * 3. Work = Work + Allocation[i], Finish[i] = true, add to safe sequence
- * 4. Repeat step 2 until all finished (SAFE) or no process can be found (UNSAFE)
+ * Basically what happens here is:
+ * 1. We copy Available resources into a working array (Work) and mark all processes unfinished (Finish[i] = false)
+ * 2. Find any process whose remaining Need can be satisfied by current Work (Need[i] <= Work)
+ *    If there are multiple, we just pick the lowest index first
+ * 3. Pretend that process runs to completion and gives back its allocated resources (Work = Work + Allocation[i])
+ * 4. Mark it finished and add to our safe sequence
+ * 5. Keep looping until either every process finishes (system is SAFE!) or we get stuck (UNSAFE / deadlock risk)
  */
 public class BankerEngine {
 
-    /**
-     * Run the safety algorithm on the given state.
-     */
+    // this is where we actually run the safety check on whatever BankerState is passed in
     public SafetyResult checkSafety(BankerState state) {
         int n = state.getProcesses();
         int m = state.getResources();
@@ -43,7 +42,7 @@ public class BankerEngine {
             for (int i = 0; i < n; i++) {
                 if (finish[i]) continue;
 
-                // Check if Need[i] <= Work
+                // check if the system currently has enough free resources to satisfy what P[i] still needs
                 boolean canExecute = true;
                 for (int j = 0; j < m; j++) {
                     if (need[i][j] > work[j]) {
@@ -56,11 +55,11 @@ public class BankerEngine {
                     stepNum++;
                     String pid = "P" + i;
 
-                    // Record step BEFORE updating work
+                    // we need to snapshot the state before updating work so the UI table/logs can show the step-by-step math
                     int[] workBefore = Arrays.copyOf(work, work.length);
                     int[] needI = Arrays.copyOf(need[i], need[i].length);
 
-                    // Execute: Work = Work + Allocation[i]
+                    // when the process finishes, it releases everything it was holding back into Work
                     for (int j = 0; j < m; j++) {
                         work[j] += allocation[i][j];
                     }
@@ -74,7 +73,7 @@ public class BankerEngine {
             }
         }
 
-        // Check if all processes finished
+        // if any process couldn't finish, then the system isn't in a safe state
         List<String> unfinished = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             if (!finish[i]) {
@@ -86,9 +85,9 @@ public class BankerEngine {
         return new SafetyResult(safe, safeSequence, steps, unfinished);
     }
 
-    /**
-     * Validate that the banker state is consistent.
-     * Returns a list of error messages (empty if valid).
+    /*
+     * We wrote this helper to catch bad matrix inputs before running the algorithm.
+     * Returns a list of error strings — if it's empty, everything is good to go!
      */
     public List<String> validate(int[][] allocation, int[][] maximum, int[] available) {
         List<String> errors = new ArrayList<>();
@@ -122,14 +121,14 @@ public class BankerEngine {
             return errors;
         }
 
-        // Check non-negative values
+        // make sure we don't have negative available resources (that wouldn't make sense physically)
         for (int j = 0; j < m; j++) {
             if (available[j] < 0) {
                 errors.add("Available[" + j + "] cannot be negative.");
             }
         }
 
-        // Check allocation <= maximum
+        // sanity check: a process can't hold negative resources or claim more than its declared maximum
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < m; j++) {
                 if (allocation[i][j] < 0) {

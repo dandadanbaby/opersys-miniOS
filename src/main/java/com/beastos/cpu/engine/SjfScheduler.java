@@ -5,10 +5,12 @@ import com.beastos.cpu.model.Process;
 
 import java.util.*;
 
-/**
- * Shortest Job First (SJF) CPU Scheduling Algorithm.
- * Non-preemptive. Selects the arrived process with the shortest burst time.
- * Tie-breaking: earliest arrival, then lowest PID.
+/*
+ * Our implementation of Non-Preemptive Shortest Job First (SJF).
+ * Basically, whenever the CPU is ready for a new process, we check all the processes
+ * that have arrived so far and pick the one with the shortest burst time.
+ * Since it's non-preemptive, once a process starts running, it gets to finish completely.
+ * If there's a tie, we pick the one that arrived earlier, or lowest PID as a last resort.
  */
 public class SjfScheduler implements CpuScheduler {
 
@@ -23,7 +25,7 @@ public class SjfScheduler implements CpuScheduler {
         int currentTime = 0;
 
         while (!remaining.isEmpty()) {
-            // Find arrived processes
+            // find all the processes that have actually arrived by the current time
             List<Process> available = new ArrayList<>();
             for (Process p : remaining) {
                 if (p.getArrivalTime() <= currentTime) {
@@ -32,7 +34,8 @@ public class SjfScheduler implements CpuScheduler {
             }
 
             if (available.isEmpty()) {
-                // CPU idle — advance to next arrival
+                // if nothing has arrived yet, the CPU is just sitting idle!
+                // we fast-forward our clock to when the next process is scheduled to arrive
                 int nextArrival = remaining.stream()
                         .mapToInt(Process::getArrivalTime).min().orElse(currentTime);
                 gantt.add(new GanttEntry("IDLE", currentTime, nextArrival));
@@ -40,7 +43,8 @@ public class SjfScheduler implements CpuScheduler {
                 continue;
             }
 
-            // Select process with shortest burst time
+            // here's where we pick the shortest job!
+            // sort by burst time first, then break ties using arrival time and PID
             available.sort(Comparator.comparingInt(Process::getBurstTime)
                     .thenComparingInt(Process::getArrivalTime)
                     .thenComparing(Process::getPid));

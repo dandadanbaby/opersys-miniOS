@@ -21,32 +21,33 @@ import javafx.scene.layout.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * CPU Scheduling module view for BEAST OS.
- * Matches the supplied design reference: stat cards, algorithm tabs,
- * editable process table, Gantt chart, and results table.
+/*
+ * Team notes on our CPU Scheduling screen:
+ * Basically, this is where we visualize how different CPU scheduling algorithms handle processes over time!
+ * We designed the UI with stat cards at the top for quick averages, an editable process table
+ * on the left where users can test different algorithms, and the visual Gantt chart + detailed
+ * calculation metrics table on the right.
  */
 public class CpuSchedulingView extends ScrollPane {
 
     private static final SimulationSession session = SimulationSession.getInstance();
 
-    // Algorithm selection
+    // tracks which algorithm tab is selected (we start on FCFS by default)
     private String selectedAlgorithm = "FCFS";
     private final List<Button> algoTabs = new ArrayList<>();
 
-    // Input controls
+    // input controls: container for our dynamic process rows, and the quantum box for Round Robin
     private final VBox processInputRows = new VBox(6);
     private final TextField quantumField = new TextField("4");
     private final HBox quantumConfig = new HBox(8);
-    private int processCounter = 0;
 
-    // Stat card labels
+    // stat card labels so the user can quickly see overall performance metrics without hunting for them
     private final Label activeProcessesValue = new Label("00");
     private final Label avgWaitingValue = new Label("0.00");
     private final Label avgTurnaroundValue = new Label("0.00");
     private final Label cpuUtilValue = new Label("0.0%");
 
-    // Results
+    // results components: custom canvas for the Gantt chart, results table, and average metrics footer
     private final Canvas ganttCanvas = new Canvas(580, 220);
     private final TableView<SchedulingResult> resultsTable = new TableView<>();
     private final Label avgWtFooter = new Label("Average Waiting Time: 0.00 ms");
@@ -67,21 +68,19 @@ public class CpuSchedulingView extends ScrollPane {
         setHbarPolicy(ScrollBarPolicy.NEVER);
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
 
-        // Add default process rows matching Design References/Modules/cpu-scheduling.png
+        // we load up 4 default processes from our design reference so the app has data ready right away
         addProcessRow("P1", "0", "8", "3");
         addProcessRow("P2", "1", "4", "1");
         addProcessRow("P3", "2", "9", "4");
         addProcessRow("P4", "3", "5", "2");
 
-        // Select Round Robin and run simulation on launch
+        // we select Round Robin with quantum 4 and run it on launch so the screen isn't blank
         selectAlgorithm("Round Robin");
         quantumField.setText("4");
         runSimulation();
     }
 
-    // ----------------------------------------------------------------
-    //  Header
-    // ----------------------------------------------------------------
+    // builds the top header bar with the title, description, and "New Simulation" reset button
     private VBox createHeader() {
         Label tag = new Label("OPERATING SYSTEM WORKBENCH");
         tag.getStyleClass().add("content-section-tag");
@@ -108,9 +107,7 @@ public class CpuSchedulingView extends ScrollPane {
         return header;
     }
 
-    // ----------------------------------------------------------------
-    //  Stat Cards
-    // ----------------------------------------------------------------
+    // creates the 4 summary cards up top: active processes, average wait, turnaround time, and CPU utilization
     private HBox createStatCards() {
         VBox card1 = buildStatCard("ACTIVE PROCESSES", activeProcessesValue, "", "+2 this session", "#22c55e");
         VBox card2 = buildStatCard("AVG WAITING TIME", avgWaitingValue, "ms", "Average queue wait", "#2dd4bf");
@@ -126,6 +123,7 @@ public class CpuSchedulingView extends ScrollPane {
         return row;
     }
 
+    // helper to build a nice styled stat card with a colored accent badge
     private VBox buildStatCard(String labelText, Label valueLabel, String unitText, String descText, String colorHex) {
         Label cardLabel = new Label(labelText);
         cardLabel.getStyleClass().add("stat-card-label");
@@ -155,9 +153,7 @@ public class CpuSchedulingView extends ScrollPane {
         return card;
     }
 
-    // ----------------------------------------------------------------
-    //  Main two-panel area
-    // ----------------------------------------------------------------
+    // sets up the two-column split layout: inputs on the left, Gantt chart + results on the right
     private HBox createMainArea() {
         VBox leftPanel = createInputPanel();
         VBox rightPanel = createResultsPanel();
@@ -175,11 +171,9 @@ public class CpuSchedulingView extends ScrollPane {
         return main;
     }
 
-    // ----------------------------------------------------------------
-    //  Left Panel — Process Input Table
-    // ----------------------------------------------------------------
+    // left panel: where users pick the algorithm, tweak time quantum, and configure processes
     private VBox createInputPanel() {
-        // Title with Add Process button
+        // header row inside the panel with title, hints, and "+ Add Process" button
         Label panelTitle = new Label("Process Input Table");
         panelTitle.getStyleClass().add("panel-title");
 
@@ -195,10 +189,10 @@ public class CpuSchedulingView extends ScrollPane {
         HBox titleRow = new HBox(8, panelTitle, algoHint, spacer, addBtn);
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
-        // Algorithm tabs
+        // tab buttons to switch between algorithms
         HBox tabBar = createAlgorithmTabs();
 
-        // Quantum config (only visible for RR)
+        // quantum config box: we only make this visible for Round Robin because the others don't use quantum
         Label configLabel = new Label("Config");
         configLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8; -fx-font-weight: bold;");
         Label qLabel = new Label("Time Quantum:");
@@ -212,25 +206,25 @@ public class CpuSchedulingView extends ScrollPane {
         quantumConfig.setVisible(false);
         quantumConfig.setManaged(false);
 
-        // Column headers
+        // table column headers
         HBox colHeaders = createColumnHeaders();
 
-        // Process rows container
+        // container for the dynamic process input rows
         processInputRows.setPadding(new Insets(0));
 
-        // Scrollable input area
+        // we wrapped the rows in a ScrollPane so the layout doesn't break if someone adds tons of processes lol
         ScrollPane inputScroll = new ScrollPane(processInputRows);
         inputScroll.setFitToWidth(true);
         inputScroll.setPrefHeight(260);
         inputScroll.setMaxHeight(400);
         inputScroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
 
-        // Error label
+        // red error label to display validation issues if inputs are invalid or missing
         errorLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 12px; -fx-wrap-text: true;");
         errorLabel.setWrapText(true);
         errorLabel.setMaxWidth(Double.MAX_VALUE);
 
-        // Confirm button
+        // confirm button that triggers validation and runs the simulation
         Button confirmBtn = new Button("Confirm");
         confirmBtn.getStyleClass().add("btn-accent");
         confirmBtn.setMaxWidth(Double.MAX_VALUE);
@@ -243,6 +237,7 @@ public class CpuSchedulingView extends ScrollPane {
         return panel;
     }
 
+    // creates clickable tabs for each scheduling algorithm we implemented
     private HBox createAlgorithmTabs() {
         String[] algorithms = {"FCFS", "SJF", "Round Robin", "Priority"};
         HBox tabBar = new HBox(8);
@@ -261,6 +256,7 @@ public class CpuSchedulingView extends ScrollPane {
         return tabBar;
     }
 
+    // switches the active tab style and toggles the Round Robin quantum field on or off
     private void selectAlgorithm(String algo) {
         selectedAlgorithm = algo;
         for (Button tab : algoTabs) {
@@ -274,6 +270,7 @@ public class CpuSchedulingView extends ScrollPane {
         quantumConfig.setManaged(isRR);
     }
 
+    // builds column headers for the input table (Process ID, Arrival, Burst, Priority)
     private HBox createColumnHeaders() {
         Label pidH = new Label("Process ID");
         Label atH = new Label("Arrival Time");
@@ -295,12 +292,27 @@ public class CpuSchedulingView extends ScrollPane {
     }
 
     private void addProcessRow() {
-        processCounter++;
-        addProcessRow("P" + processCounter, "", "", "");
+        // we find the lowest unused PID number so if you delete a row, it fills in gaps nicely (e.g. P1, P3 -> adds P2)
+        int nextPid = 1;
+        java.util.Set<Integer> usedPids = new java.util.HashSet<>();
+        for (javafx.scene.Node child : processInputRows.getChildren()) {
+            if (child instanceof HBox row) {
+                TextField[] fields = (TextField[]) row.getUserData();
+                if (fields != null) {
+                    String pid = fields[0].getText().trim();
+                    if (pid.startsWith("P")) {
+                        try { usedPids.add(Integer.parseInt(pid.substring(1))); }
+                        catch (NumberFormatException ignored) {}
+                    }
+                }
+            }
+        }
+        while (usedPids.contains(nextPid)) nextPid++;
+        addProcessRow("P" + nextPid, "", "", "");
     }
 
+    // creates a single editable row with input fields and a delete button
     private void addProcessRow(String pid, String at, String bt, String pr) {
-        processCounter = Math.max(processCounter, pid.startsWith("P") ? Integer.parseInt(pid.substring(1)) : processCounter);
 
         TextField pidField = new TextField(pid);
         pidField.setPrefWidth(90);
@@ -317,6 +329,7 @@ public class CpuSchedulingView extends ScrollPane {
         prField.setPrefWidth(80);
         prField.setPromptText("0");
 
+        // delete button to remove this row, but we make sure at least 1 row always stays
         Button delBtn = new Button("✕");
         delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #ef4444; " +
                 "-fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 2 6 2 6;");
@@ -333,26 +346,24 @@ public class CpuSchedulingView extends ScrollPane {
         processInputRows.getChildren().add(row);
     }
 
-    // ----------------------------------------------------------------
-    //  Right Panel — Gantt Chart + Results Table
-    // ----------------------------------------------------------------
+    // right panel: contains the visual Gantt chart timeline and the detailed calculation results table
     private VBox createResultsPanel() {
-        // Gantt chart panel
+        // Gantt chart panel: draws the visual timeline blocks of process execution
         Label ganttTitle = new Label("CPU execution timeline");
         ganttTitle.getStyleClass().add("panel-title");
         Label ganttSubtitle = new Label("Visual Gantt Chart Scheduler");
         ganttSubtitle.getStyleClass().add("panel-subtitle");
 
-        GanttChartRenderer.render(ganttCanvas, null); // empty state
+        GanttChartRenderer.render(ganttCanvas, null); // empty state before running anything
 
         VBox ganttPanel = new VBox(8, ganttTitle, ganttSubtitle, ganttCanvas);
         ganttPanel.getStyleClass().add("panel");
         ganttPanel.setMinHeight(280);
 
-        // Make canvas responsive
+        // tricky part: we bind the canvas width to the panel so it resizes smoothly when the user resizes the window
         ganttCanvas.widthProperty().bind(ganttPanel.widthProperty().subtract(40));
         ganttCanvas.widthProperty().addListener((obs, o, n) -> {
-            // Re-render with last output if available
+            // re-render the Gantt chart with the latest output if available so it doesn't get stretched or disappear
             Object lastResult = ganttPanel.getUserData();
             if (lastResult instanceof SchedulingOutput out) {
                 GanttChartRenderer.render(ganttCanvas, out.getGanttChart());
@@ -361,13 +372,13 @@ public class CpuSchedulingView extends ScrollPane {
             }
         });
 
-        // Results table
+        // results table showing exact calculated values for each process
         Label tableTitle = new Label("Scheduling Calculation Results");
         tableTitle.getStyleClass().add("panel-title");
 
         setupResultsTable();
 
-        // Footer averages
+        // bottom footer displaying the calculated average waiting time and turnaround time
         avgWtFooter.setStyle("-fx-font-size: 13px; -fx-text-fill: #2dd4bf; -fx-font-weight: bold;");
         avgTatFooter.setStyle("-fx-font-size: 13px; -fx-text-fill: #2dd4bf; -fx-font-weight: bold;");
 
@@ -389,6 +400,7 @@ public class CpuSchedulingView extends ScrollPane {
         return rightPanel;
     }
 
+    // configures all table columns and binds them to our SchedulingResult model properties
     @SuppressWarnings("unchecked")
     private void setupResultsTable() {
         TableColumn<SchedulingResult, String> pidCol = new TableColumn<>("Process");
@@ -424,7 +436,7 @@ public class CpuSchedulingView extends ScrollPane {
         resultsTable.setPrefHeight(200);
         resultsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
 
-        // Style the process PID column with accent color
+        // we style the PID column in teal accent color so it stands out nicely in the table
         pidCol.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -440,13 +452,11 @@ public class CpuSchedulingView extends ScrollPane {
         });
     }
 
-    // ----------------------------------------------------------------
-    //  Simulation Execution
-    // ----------------------------------------------------------------
+    // basically the heart of the view: validates inputs, creates process models, runs the engine, and updates the UI
     private void runSimulation() {
         errorLabel.setText("");
 
-        // Parse and validate input
+        // step 1: read all rows from the input table and validate each value
         List<Process> processes = new ArrayList<>();
         List<String> errors = new ArrayList<>();
         List<String> pids = new ArrayList<>();
@@ -461,7 +471,7 @@ public class CpuSchedulingView extends ScrollPane {
             String btStr = fields[2].getText().trim();
             String prStr = fields[3].getText().trim();
 
-            // Default empty fields
+            // arrival and priority default to 0 if left blank, but burst time and PID are strictly required
             if (atStr.isEmpty()) atStr = "0";
             if (btStr.isEmpty()) { errors.add("Row " + (i + 1) + ": Burst Time is required."); continue; }
             if (prStr.isEmpty()) prStr = "0";
@@ -489,7 +499,7 @@ public class CpuSchedulingView extends ScrollPane {
             return;
         }
 
-        // Check duplicate PIDs
+        // we had to add this check to ensure no duplicate PIDs are entered, otherwise Gantt/results get messed up
         ValidationResult dupCheck = InputValidator.validateNoDuplicates(pids, "Process IDs");
         if (dupCheck.hasErrors()) {
             errorLabel.setText(String.join("\n", dupCheck.getErrors()));
@@ -501,7 +511,7 @@ public class CpuSchedulingView extends ScrollPane {
             return;
         }
 
-        // Validate quantum for RR
+        // if Round Robin is picked, we must make sure time quantum is a valid positive integer
         int quantum = 4;
         if ("Round Robin".equals(selectedAlgorithm)) {
             ValidationResult vQ = InputValidator.validatePositiveInt(
@@ -513,7 +523,7 @@ public class CpuSchedulingView extends ScrollPane {
             quantum = Integer.parseInt(quantumField.getText().trim());
         }
 
-        // Select scheduler
+        // step 2: instantiate whichever scheduling engine the user selected in the tabs
         CpuScheduler scheduler = switch (selectedAlgorithm) {
             case "FCFS" -> new FcfsScheduler();
             case "SJF" -> new SjfScheduler();
@@ -522,40 +532,40 @@ public class CpuSchedulingView extends ScrollPane {
             default -> new FcfsScheduler();
         };
 
-        // Run simulation
+        // step 3: run the scheduling algorithm and collect the output
         session.setSimulationState(SimulationState.RUNNING);
         SchedulingOutput output = scheduler.schedule(processes);
         session.setSimulationState(SimulationState.COMPLETED);
 
-        // Update stat cards
+        // step 4: update our stat cards with the new average metrics and CPU utilization
         activeProcessesValue.setText(String.format("%02d", output.getProcessCount()));
         avgWaitingValue.setText(String.format("%.2f", output.getAverageWaitingTime()));
         avgTurnaroundValue.setText(String.format("%.2f", output.getAverageTurnaroundTime()));
         cpuUtilValue.setText(String.format("%.1f%%", output.getCpuUtilization()));
 
-        // Update session
+        // update the global session state so other modules know what's active
         session.setActiveProcesses(output.getProcessCount());
         session.setCpuUtilization(output.getCpuUtilization());
         session.incrementSimulationsCompleted();
         session.setLastCpuResult(output);
 
-        // Update Gantt chart
+        // step 5: draw the Gantt chart timeline on our canvas
         VBox ganttPanel = (VBox) ganttCanvas.getParent();
         ganttPanel.setUserData(output);
         GanttChartRenderer.render(ganttCanvas, output.getGanttChart());
 
-        // Update results table
+        // step 6: populate the results table with individual process rows
         ObservableList<SchedulingResult> data = FXCollections.observableArrayList(output.getResults());
         resultsTable.setItems(data);
 
-        // Update footer
+        // step 7: update the summary footer with final calculated averages
         avgWtFooter.setText(String.format("Average Waiting Time: %.2f ms", output.getAverageWaitingTime()));
         avgTatFooter.setText(String.format("Average Turnaround Time: %.2f ms", output.getAverageTurnaroundTime()));
     }
 
+    // resets everything back to initial state with 4 blank process rows and cleared charts
     private void resetSimulation() {
         processInputRows.getChildren().clear();
-        processCounter = 0;
         for (int i = 0; i < 4; i++) addProcessRow();
 
         activeProcessesValue.setText("00");

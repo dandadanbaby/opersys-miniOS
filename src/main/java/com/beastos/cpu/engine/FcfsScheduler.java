@@ -5,10 +5,12 @@ import com.beastos.cpu.model.Process;
 
 import java.util.*;
 
-/**
- * First Come First Serve (FCFS) CPU Scheduling Algorithm.
- * Non-preemptive. Processes executed in arrival order.
- * Tie-breaking: lowest PID first.
+/*
+ * Team notes:
+ * This is our First Come First Serve (FCFS) scheduler!
+ * It's the simplest scheduling algorithm — basically whoever shows up first gets the CPU.
+ * It's non-preemptive, so once a process starts running, it gets to finish its whole burst.
+ * If two processes arrive at the exact same time, we break the tie using PID so our results are consistent.
  */
 public class FcfsScheduler implements CpuScheduler {
 
@@ -17,7 +19,8 @@ public class FcfsScheduler implements CpuScheduler {
 
     @Override
     public SchedulingOutput schedule(List<Process> processes) {
-        // Sort by arrival time, then by PID for deterministic ordering
+        // we copy the list and sort by arrival time so processes get handled in the order they arrive
+        // if there's a tie, we sort by PID so our simulation has deterministic ordering
         List<Process> sorted = new ArrayList<>(processes);
         sorted.sort(Comparator.comparingInt(Process::getArrivalTime)
                 .thenComparing(Process::getPid));
@@ -27,7 +30,7 @@ public class FcfsScheduler implements CpuScheduler {
         int currentTime = 0;
 
         for (Process p : sorted) {
-            // CPU idle if process hasn't arrived yet
+            // if the CPU is free but the next process hasn't arrived yet, we mark that gap as IDLE
             if (currentTime < p.getArrivalTime()) {
                 gantt.add(new GanttEntry("IDLE", currentTime, p.getArrivalTime()));
                 currentTime = p.getArrivalTime();
@@ -40,7 +43,7 @@ public class FcfsScheduler implements CpuScheduler {
 
             results.add(new SchedulingResult(
                     p.getPid(), p.getArrivalTime(), p.getBurstTime(), p.getPriority(),
-                    completionTime, startTime - p.getArrivalTime() // response time
+                    completionTime, startTime - p.getArrivalTime() // response time is just when it first got the CPU minus arrival
             ));
 
             currentTime = completionTime;
