@@ -171,17 +171,18 @@ class BeastOSIntegrationTest {
         DiskSchedulingOutput dOut = disk.schedule(dQueue, 53, 200, DiskScheduler.Algorithm.SSTF, true);
         assertEquals(236, dOut.getTotalSeekDistance());
 
-        // 8. Multiprogramming
+// 8. Multiprogramming (Processor-Sharing)
         MultiprogrammingEngine multi = new MultiprogrammingEngine();
         List<ProgramProcess> mProcs = List.of(
-                new ProgramProcess("P1", 64),
-                new ProgramProcess("P2", 128),
-                new ProgramProcess("P3", 256)
+                new ProgramProcess("j1", 10.0, 0.3),
+                new ProgramProcess("j2", 10.2, 0.5),
+                new ProgramProcess("j3", 10.4, 0.1)
         );
-        MultiprogrammingOutput mOut = multi.allocate(512, mProcs);
-        assertEquals(3, mOut.getDegreeOfMultiprogramming());
-        assertEquals(0, mOut.getWaitingCount());
-        assertEquals(448, mOut.getAllocatedMemory());
+        MultiprogrammingOutput mOut = multi.simulate(mProcs);
+        assertEquals(3, mOut.getTotalJobs());
+        assertEquals(2, mOut.getMaxConcurrency());
+        assertEquals(100.0, mOut.getCpuUtilization(), 0.01);
+        assertFalse(mOut.getTraceRows().isEmpty());
     }
 
     @Test

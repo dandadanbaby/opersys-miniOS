@@ -1,65 +1,31 @@
 package com.beastos.multiprogramming.model;
 
-/**
- * Represents a process requesting memory in a multiprogramming system.
- */
 public class ProgramProcess {
     private final String pid;
-    private final int memoryNeeded; // in MB
-    private ProcessStatus status;
-    private int remainingRam;       // in MB after allocation step
-    private int baseAddress;        // start MB in RAM (-1 if not active)
+    private final double arrivalTime; // ar
+    private final double burstTime;   // bt
+    private final ProcessStatus status;
+    private final double finishTime;
+    private final double turnaroundTime;
 
-    public ProgramProcess(String pid, int memoryNeeded) {
-        this(pid, memoryNeeded, ProcessStatus.WAITING, -1, -1);
+    public ProgramProcess(String pid, double arrivalTime, double burstTime) {
+        this(pid, arrivalTime, burstTime, ProcessStatus.RUNNING, 0.0, 0.0);
     }
 
-    public ProgramProcess(String pid, int memoryNeeded, ProcessStatus status, int remainingRam, int baseAddress) {
+    public ProgramProcess(String pid, double arrivalTime, double burstTime,
+                          ProcessStatus status, double finishTime, double turnaroundTime) {
         this.pid = pid;
-        this.memoryNeeded = memoryNeeded;
+        this.arrivalTime = arrivalTime;
+        this.burstTime = burstTime;
         this.status = status;
-        this.remainingRam = remainingRam;
-        this.baseAddress = baseAddress;
+        this.finishTime = finishTime;
+        this.turnaroundTime = turnaroundTime;
     }
 
-    public String getPid() {
-        return pid;
-    }
-
-    public int getMemoryNeeded() {
-        return memoryNeeded;
-    }
-
-    public ProcessStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ProcessStatus status) {
-        this.status = status;
-    }
-
-    public int getRemainingRam() {
-        return remainingRam;
-    }
-
-    public void setRemainingRam(int remainingRam) {
-        this.remainingRam = remainingRam;
-    }
-
-    public int getBaseAddress() {
-        return baseAddress;
-    }
-
-    public void setBaseAddress(int baseAddress) {
-        this.baseAddress = baseAddress;
-    }
-
-    public boolean isActive() {
-        return status == ProcessStatus.ACTIVE;
-    }
-
-    @Override
-    public String toString() {
-        return pid + " (" + memoryNeeded + " MB) -> " + status;
-    }
+    public String getPid() { return pid; }
+    public double getArrivalTime() { return arrivalTime; }
+    public double getBurstTime() { return burstTime; }
+    public ProcessStatus getStatus() { return status; }
+    public double getFinishTime() { return finishTime; }
+    public double getTurnaroundTime() { return turnaroundTime; }
 }

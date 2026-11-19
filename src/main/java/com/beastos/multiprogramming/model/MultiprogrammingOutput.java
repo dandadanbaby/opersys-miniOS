@@ -2,91 +2,38 @@ package com.beastos.multiprogramming.model;
 
 import java.util.List;
 
-/**
- * Output results from a multiprogramming simulation.
- */
 public class MultiprogrammingOutput {
-    private final int totalMemory;           // MB
-    private final int allocatedMemory;       // MB
-    private final int freeMemory;            // MB
-    private final double memoryUtilization;  // percentage (0 - 100)
-    private final double cpuLoad;            // simulated CPU load %
-    private final double resourceLoad;       // simulated peripheral/resource load %
-    private final int degreeOfMultiprogramming; // count of active processes
-    private final int totalProcesses;
-    private final int waitingCount;
-    private final List<ProgramProcess> processes;
+    private final int totalJobs;
+    private final int maxConcurrency;     // peak nj
+    private final double startTime;
+    private final double endTime;
+    private final double totalBurstWork;
+    private final double cpuUtilization;  // %
+    private final double avgTurnaround;
+    private final List<ProgramProcess> jobs;
+    private final List<String[]> traceRows; // [time, event, nj, %cpu/job, et, hw/job, active jobs & time left]
 
-    public MultiprogrammingOutput(int totalMemory, int allocatedMemory,
-                                  double cpuLoad, double resourceLoad,
-                                  List<ProgramProcess> processes) {
-        this.totalMemory = totalMemory;
-        this.allocatedMemory = allocatedMemory;
-        this.freeMemory = Math.max(0, totalMemory - allocatedMemory);
-        this.memoryUtilization = totalMemory > 0 ? (allocatedMemory * 100.0) / totalMemory : 0.0;
-        this.cpuLoad = cpuLoad;
-        this.resourceLoad = resourceLoad;
-        this.processes = List.copyOf(processes);
-
-        int active = 0;
-        int waiting = 0;
-        for (ProgramProcess p : processes) {
-            if (p.isActive()) {
-                active++;
-            } else if (p.getStatus() == ProcessStatus.WAITING) {
-                waiting++;
-            }
-        }
-        this.degreeOfMultiprogramming = active;
-        this.totalProcesses = processes.size();
-        this.waitingCount = waiting;
+    public MultiprogrammingOutput(int totalJobs, int maxConcurrency, double startTime, double endTime,
+                                  double totalBurstWork, double cpuUtilization, double avgTurnaround,
+                                  List<ProgramProcess> jobs, List<String[]> traceRows) {
+        this.totalJobs = totalJobs;
+        this.maxConcurrency = maxConcurrency;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.totalBurstWork = totalBurstWork;
+        this.cpuUtilization = cpuUtilization;
+        this.avgTurnaround = avgTurnaround;
+        this.jobs = List.copyOf(jobs);
+        this.traceRows = List.copyOf(traceRows);
     }
 
-    public int getTotalMemory() {
-        return totalMemory;
-    }
-
-    public int getAllocatedMemory() {
-        return allocatedMemory;
-    }
-
-    public int getFreeMemory() {
-        return freeMemory;
-    }
-
-    public double getMemoryUtilization() {
-        return memoryUtilization;
-    }
-
-    public double getCpuLoad() {
-        return cpuLoad;
-    }
-
-    public double getResourceLoad() {
-        return resourceLoad;
-    }
-
-    public int getDegreeOfMultiprogramming() {
-        return degreeOfMultiprogramming;
-    }
-
-    public int getTotalProcesses() {
-        return totalProcesses;
-    }
-
-    public int getWaitingCount() {
-        return waitingCount;
-    }
-
-    public List<ProgramProcess> getProcesses() {
-        return processes;
-    }
-
-    public List<ProgramProcess> getActiveProcesses() {
-        return processes.stream().filter(ProgramProcess::isActive).toList();
-    }
-
-    public List<ProgramProcess> getWaitingProcesses() {
-        return processes.stream().filter(p -> p.getStatus() == ProcessStatus.WAITING).toList();
-    }
+    public int getTotalJobs() { return totalJobs; }
+    public int getMaxConcurrency() { return maxConcurrency; }
+    public double getStartTime() { return startTime; }
+    public double getEndTime() { return endTime; }
+    public double getTotalBurstWork() { return totalBurstWork; }
+    public double getCpuUtilization() { return cpuUtilization; }
+    public double getAvgTurnaround() { return avgTurnaround; }
+    public List<ProgramProcess> getJobs() { return jobs; }
+    public List<String[]> getTraceRows() { return traceRows; }
 }
