@@ -16,9 +16,9 @@ import java.util.*;
  */
 public class RoundRobinScheduler implements CpuScheduler {
 
-    private final int timeQuantum;
+    private final double timeQuantum;
 
-    public RoundRobinScheduler(int timeQuantum) {
+    public RoundRobinScheduler(double timeQuantum) {
         if (timeQuantum <= 0) throw new IllegalArgumentException("Time quantum must be > 0");
         this.timeQuantum = timeQuantum;
     }
@@ -29,9 +29,9 @@ public class RoundRobinScheduler implements CpuScheduler {
     @Override
     public SchedulingOutput schedule(List<Process> processes) {
         // we need these maps to keep track of remaining burst time and look up process info quickly
-        Map<String, Integer> remainingBurst = new LinkedHashMap<>();
+        Map<String, Double> remainingBurst = new LinkedHashMap<>();
         Map<String, Process> processMap = new LinkedHashMap<>();
-        Map<String, Integer> firstResponseTime = new HashMap<>();
+        Map<String, Double> firstResponseTime = new HashMap<>();
 
         for (Process p : processes) {
             remainingBurst.put(p.getPid(), p.getBurstTime());
@@ -40,7 +40,7 @@ public class RoundRobinScheduler implements CpuScheduler {
 
         // sort by arrival time first, and if they arrive together, we break ties by lowest PID
         List<Process> sortedByArrival = new ArrayList<>(processes);
-        sortedByArrival.sort(Comparator.comparingInt(Process::getArrivalTime)
+        sortedByArrival.sort(Comparator.comparingDouble(Process::getArrivalTime)
                 .thenComparing(Process::getPid));
 
         Queue<String> readyQueue = new LinkedList<>();
@@ -48,12 +48,12 @@ public class RoundRobinScheduler implements CpuScheduler {
         Set<String> completed = new HashSet<>();
 
         List<GanttEntry> gantt = new ArrayList<>();
-        Map<String, Integer> completionTimes = new HashMap<>();
-        int currentTime = 0;
+        Map<String, Double> completionTimes = new HashMap<>();
+        double currentTime = 0;
 
         // load all the processes that arrived right at time 0 into our ready queue
         for (Process p : sortedByArrival) {
-            if (p.getArrivalTime() == 0 && !inQueue.contains(p.getPid())) {
+            if (p.getArrivalTime() <= 0 && !inQueue.contains(p.getPid())) {
                 readyQueue.add(p.getPid());
                 inQueue.add(p.getPid());
             }
@@ -62,13 +62,13 @@ public class RoundRobinScheduler implements CpuScheduler {
         while (completed.size() < processes.size()) {
             if (readyQueue.isEmpty()) {
                 // if ready queue is empty, CPU is idle! so we jump ahead to whenever the next process arrives
-                int nextArrival = Integer.MAX_VALUE;
+                double nextArrival = Double.MAX_VALUE;
                 for (Process p : sortedByArrival) {
                     if (!completed.contains(p.getPid()) && !inQueue.contains(p.getPid())) {
                         nextArrival = Math.min(nextArrival, p.getArrivalTime());
                     }
                 }
-                if (nextArrival == Integer.MAX_VALUE) break;
+                if (nextArrival == Double.MAX_VALUE) break;
                 gantt.add(new GanttEntry("IDLE", currentTime, nextArrival));
                 currentTime = nextArrival;
 
@@ -84,16 +84,16 @@ public class RoundRobinScheduler implements CpuScheduler {
             }
 
             String pid = readyQueue.poll();
-            int remaining = remainingBurst.get(pid);
-            int execTime = Math.min(remaining, timeQuantum);
+            double remaining = remainingBurst.get(pid);
+            double execTime = Math.min(remaining, timeQuantum);
 
             // response time is recorded the very first time the process gets the CPU
             if (!firstResponseTime.containsKey(pid)) {
                 firstResponseTime.put(pid, currentTime);
             }
 
-            int startTime = currentTime;
-            int endTime = currentTime + execTime;
+            double startTime = currentTime;
+            double endTime = currentTime + execTime;
             gantt.add(new GanttEntry(pid, startTime, endTime));
 
             currentTime = endTime;
@@ -109,7 +109,7 @@ public class RoundRobinScheduler implements CpuScheduler {
                 }
             }
 
-            if (remaining > 0) {
+            if (remaining > 1e-9) {
                 // process didn't finish its burst, so send it to the back of the queue
                 readyQueue.add(pid);
             } else {
@@ -123,8 +123,8 @@ public class RoundRobinScheduler implements CpuScheduler {
         // basically what happens here is we package up the final metrics (turnaround, waiting, response) for each process
         List<SchedulingResult> results = new ArrayList<>();
         for (Process p : processes) {
-            int ct = completionTimes.getOrDefault(p.getPid(), currentTime);
-            int rt = firstResponseTime.getOrDefault(p.getPid(), 0) - p.getArrivalTime();
+            double ct = completionTimes.getOrDefault(p.getPid(), currentTime);
+            double rt = firstResponseTime.getOrDefault(p.getPid(), 0.0) - p.getArrivalTime();
             results.add(new SchedulingResult(
                     p.getPid(), p.getArrivalTime(), p.getBurstTime(), p.getPriority(),
                     ct, rt

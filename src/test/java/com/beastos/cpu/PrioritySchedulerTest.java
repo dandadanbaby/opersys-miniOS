@@ -97,13 +97,13 @@ class PrioritySchedulerTest {
     }
 
     private void assertResult(List<SchedulingResult> results, String pid,
-                               int expectedCT, int expectedTAT, int expectedWT) {
+                               double expectedCT, double expectedTAT, double expectedWT) {
         SchedulingResult r = results.stream()
                 .filter(res -> res.getPid().equals(pid))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Process " + pid + " not found"));
-        assertEquals(expectedCT, r.getCompletionTime(), pid + " CT");
-        assertEquals(expectedTAT, r.getTurnaroundTime(), pid + " TAT");
-        assertEquals(expectedWT, r.getWaitingTime(), pid + " WT");
+        assertEquals(expectedCT, r.getCompletionTime(), 0.001, pid + " CT");
+        assertEquals(expectedTAT, r.getTurnaroundTime(), 0.001, pid + " TAT");
+        assertEquals(expectedWT, r.getWaitingTime(), 0.001, pid + " WT");
     }
 }

@@ -101,6 +101,21 @@ class FcfsSchedulerTest {
     }
 
     @Test
+    void testDecimalTimes() {
+        // P1(AT=0.5, BT=2.5), P2(AT=1.0, BT=1.5)
+        List<Process> processes = List.of(
+                new Process("P1", 0.5, 2.5),
+                new Process("P2", 1.0, 1.5)
+        );
+
+        SchedulingOutput output = scheduler.schedule(processes);
+        // P1 arrives at 0.5, finishes at 0.5 + 2.5 = 3.0. CT=3.0, TAT=2.5, WT=0.0
+        // P2 waits until 3.0, finishes at 3.0 + 1.5 = 4.5. CT=4.5, TAT=3.5, WT=2.0
+        assertResult(output.getResults(), "P1", 3.0, 2.5, 0.0);
+        assertResult(output.getResults(), "P2", 4.5, 3.5, 2.0);
+    }
+
+    @Test
     void testLargeInput_1000Processes() {
         List<Process> processes = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
@@ -116,14 +131,14 @@ class FcfsSchedulerTest {
     }
 
     private void assertResult(List<SchedulingResult> results, String pid,
-                               int expectedCT, int expectedTAT, int expectedWT) {
+                               double expectedCT, double expectedTAT, double expectedWT) {
         SchedulingResult r = results.stream()
                 .filter(res -> res.getPid().equals(pid))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Process " + pid + " not found"));
-        assertEquals(expectedCT, r.getCompletionTime(), pid + " CT");
-        assertEquals(expectedTAT, r.getTurnaroundTime(), pid + " TAT");
-        assertEquals(expectedWT, r.getWaitingTime(), pid + " WT");
+        assertEquals(expectedCT, r.getCompletionTime(), 0.001, pid + " CT");
+        assertEquals(expectedTAT, r.getTurnaroundTime(), 0.001, pid + " TAT");
+        assertEquals(expectedWT, r.getWaitingTime(), 0.001, pid + " WT");
     }
 
     // Fix the inner class name — Java doesn't have AssertionError, it's AssertionError

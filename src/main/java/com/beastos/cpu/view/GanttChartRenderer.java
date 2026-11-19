@@ -77,11 +77,11 @@ public final class GanttChartRenderer {
         }
 
         // figure out the total execution time so we can scale pixel widths to match the timeline
-        int maxTime = 0;
+        double maxTime = 0;
         for (GanttEntry entry : ganttChart) {
             maxTime = Math.max(maxTime, entry.getEndTime());
         }
-        if (maxTime == 0) maxTime = 1;
+        if (maxTime <= 0) maxTime = 1;
 
         int numRows = processIds.size();
         double chartWidth = w - LEFT_MARGIN - RIGHT_MARGIN;
@@ -96,14 +96,11 @@ public final class GanttChartRenderer {
         // draw vertical grid lines across all rows to help track time progression
         gc.setStroke(GRID_COLOR);
         gc.setLineWidth(0.5);
-        int tickCount = Math.min(maxTime, 10);
-        if (tickCount < 2) tickCount = 2;
-        // calculate nice human-friendly tick intervals so the grid doesn't get cluttered
-        int tickInterval = computeTickInterval(maxTime);
-        int numTicks = maxTime / tickInterval;
+        double tickInterval = computeTickInterval(maxTime);
+        int numTicks = (int) Math.floor(maxTime / tickInterval);
 
         for (int i = 0; i <= numTicks; i++) {
-            int t = i * tickInterval;
+            double t = i * tickInterval;
             double x = LEFT_MARGIN + (chartWidth * t / maxTime);
             gc.strokeLine(x, TOP_MARGIN, x, TOP_MARGIN + chartHeight);
         }
@@ -170,14 +167,14 @@ public final class GanttChartRenderer {
         gc.setFill(TEXT_MUTED);
         double axisY = TOP_MARGIN + chartHeight + 15;
         for (int i = 0; i <= numTicks; i++) {
-            int t = i * tickInterval;
+            double t = i * tickInterval;
             double x = LEFT_MARGIN + (chartWidth * t / maxTime);
-            gc.fillText(t + "ms", x - 8, axisY);
+            gc.fillText(formatTime(t) + "ms", x - 8, axisY);
         }
         // we always want to show the final completion timestamp even if it doesn't land on an exact tick
-        if (maxTime % tickInterval != 0) {
+        if (Math.abs(maxTime - (numTicks * tickInterval)) > 1e-4) {
             double x = LEFT_MARGIN + chartWidth;
-            gc.fillText(maxTime + "ms", x - 12, axisY);
+            gc.fillText(formatTime(maxTime) + "ms", x - 12, axisY);
         }
     }
 
@@ -207,13 +204,23 @@ public final class GanttChartRenderer {
     }
 
     // helper we came up with to pick clean round tick intervals (1, 2, 5, 10, etc.) so the time axis looks neat
-    private static int computeTickInterval(int maxTime) {
+    private static double computeTickInterval(double maxTime) {
+        if (maxTime <= 2) return 0.2;
+        if (maxTime <= 5) return 0.5;
         if (maxTime <= 10) return 1;
         if (maxTime <= 20) return 2;
         if (maxTime <= 50) return 5;
         if (maxTime <= 100) return 10;
         if (maxTime <= 200) return 20;
         if (maxTime <= 500) return 50;
-        return (int) Math.pow(10, (int) Math.log10(maxTime));
+        return Math.pow(10, Math.floor(Math.log10(maxTime)));
+    }
+
+    private static String formatTime(double val) {
+        if (Math.abs(val - Math.round(val)) < 1e-6) {
+            return String.valueOf(Math.round(val));
+        } else {
+            return String.format(Locale.US, "%.1f", val);
+        }
     }
 }

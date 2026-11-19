@@ -91,6 +91,36 @@ public final class InputValidator {
         return result;
     }
 
+    /** Parse and validate a non-negative double (>= 0). */
+    public static ValidationResult validateNonNegativeDouble(String value, String fieldName) {
+        ValidationResult blank = requireNonBlank(value, fieldName);
+        if (blank.hasErrors()) return blank;
+        try {
+            double v = Double.parseDouble(value.trim());
+            if (v < 0) {
+                return ValidationResult.failure(fieldName + " must be non-negative. Got: " + v);
+            }
+            return ValidationResult.success();
+        } catch (NumberFormatException e) {
+            return ValidationResult.failure(fieldName + " must be a valid number. Got: '" + value.trim() + "'");
+        }
+    }
+
+    /** Parse and validate a positive double (> 0). */
+    public static ValidationResult validatePositiveDouble(String value, String fieldName) {
+        ValidationResult blank = requireNonBlank(value, fieldName);
+        if (blank.hasErrors()) return blank;
+        try {
+            double v = Double.parseDouble(value.trim());
+            if (v <= 0) {
+                return ValidationResult.failure(fieldName + " must be a positive number (> 0). Got: " + v);
+            }
+            return ValidationResult.success();
+        } catch (NumberFormatException e) {
+            return ValidationResult.failure(fieldName + " must be a valid number. Got: '" + value.trim() + "'");
+        }
+    }
+
     /** Validate that allocation[i][j] <= max[i][j] for all i,j. */
     public static ValidationResult validateAllocationNotExceedsMax(
             int[][] allocation, int[][] max, int processes, int resources) {

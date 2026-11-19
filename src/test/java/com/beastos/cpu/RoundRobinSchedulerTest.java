@@ -132,20 +132,20 @@ class RoundRobinSchedulerTest {
         SchedulingOutput output = scheduler.schedule(processes);
         assertEquals(200, output.getResults().size());
         // Last process should complete at 200*3 = 600
-        int maxCT = output.getResults().stream()
-                .mapToInt(SchedulingResult::getCompletionTime)
-                .max().orElse(0);
-        assertEquals(600, maxCT);
+        double maxCT = output.getResults().stream()
+                .mapToDouble(SchedulingResult::getCompletionTime)
+                .max().orElse(0.0);
+        assertEquals(600.0, maxCT, 0.001);
     }
 
     private void assertResult(List<SchedulingResult> results, String pid,
-                               int expectedCT, int expectedTAT, int expectedWT) {
+                               double expectedCT, double expectedTAT, double expectedWT) {
         SchedulingResult r = results.stream()
                 .filter(res -> res.getPid().equals(pid))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Process " + pid + " not found"));
-        assertEquals(expectedCT, r.getCompletionTime(), pid + " CT");
-        assertEquals(expectedTAT, r.getTurnaroundTime(), pid + " TAT");
-        assertEquals(expectedWT, r.getWaitingTime(), pid + " WT");
+        assertEquals(expectedCT, r.getCompletionTime(), 0.001, pid + " CT");
+        assertEquals(expectedTAT, r.getTurnaroundTime(), 0.001, pid + " TAT");
+        assertEquals(expectedWT, r.getWaitingTime(), 0.001, pid + " WT");
     }
 }

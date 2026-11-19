@@ -8,16 +8,16 @@ import java.util.List;
 // so the UI can just grab this object and display the entire results screen easily.
 public class SchedulingOutput {
     private final String algorithmName;
-    private final int timeQuantum; // we set this to 0 if the algorithm doesn't use time slices (like FCFS or SJF)
+    private final double timeQuantum; // we set this to 0 if the algorithm doesn't use time slices (like FCFS or SJF)
     private final List<SchedulingResult> results;
     private final List<GanttEntry> ganttChart;
     private final double averageWaitingTime;
     private final double averageTurnaroundTime;
     private final double averageResponseTime;
     private final double cpuUtilization; // percentage of time the CPU was actually working (not idle)
-    private final int totalTime;
+    private final double totalTime;
 
-    public SchedulingOutput(String algorithmName, int timeQuantum,
+    public SchedulingOutput(String algorithmName, double timeQuantum,
                             List<SchedulingResult> results, List<GanttEntry> ganttChart) {
         this.algorithmName = algorithmName;
         this.timeQuantum = timeQuantum;
@@ -42,24 +42,24 @@ public class SchedulingOutput {
         // here we figure out the total simulation time and CPU utilization.
         // we scan the Gantt chart to find when the CPU finished everything and how much time was spent idle.
         // formula from our OS class: CPU utilization = ((total time - idle time) / total time) * 100%
-        int lastEnd = 0;
-        int idleTime = 0;
+        double lastEnd = 0;
+        double idleTime = 0;
         for (GanttEntry g : ganttChart) {
             if (g.isIdle()) idleTime += g.getDuration();
             lastEnd = Math.max(lastEnd, g.getEndTime());
         }
         this.totalTime = lastEnd;
-        this.cpuUtilization = lastEnd > 0 ? ((double)(lastEnd - idleTime) / lastEnd) * 100.0 : 0;
+        this.cpuUtilization = lastEnd > 0 ? ((lastEnd - idleTime) / lastEnd) * 100.0 : 0;
     }
 
     public String getAlgorithmName() { return algorithmName; }
-    public int getTimeQuantum() { return timeQuantum; }
+    public double getTimeQuantum() { return timeQuantum; }
     public List<SchedulingResult> getResults() { return results; }
     public List<GanttEntry> getGanttChart() { return ganttChart; }
     public double getAverageWaitingTime() { return averageWaitingTime; }
     public double getAverageTurnaroundTime() { return averageTurnaroundTime; }
     public double getAverageResponseTime() { return averageResponseTime; }
     public double getCpuUtilization() { return cpuUtilization; }
-    public int getTotalTime() { return totalTime; }
+    public double getTotalTime() { return totalTime; }
     public int getProcessCount() { return results.size(); }
 }

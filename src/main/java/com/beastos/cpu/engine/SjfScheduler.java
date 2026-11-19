@@ -22,7 +22,7 @@ public class SjfScheduler implements CpuScheduler {
         List<Process> remaining = new ArrayList<>(processes);
         List<GanttEntry> gantt = new ArrayList<>();
         List<SchedulingResult> results = new ArrayList<>();
-        int currentTime = 0;
+        double currentTime = 0;
 
         while (!remaining.isEmpty()) {
             // find all the processes that have actually arrived by the current time
@@ -36,8 +36,8 @@ public class SjfScheduler implements CpuScheduler {
             if (available.isEmpty()) {
                 // if nothing has arrived yet, the CPU is just sitting idle!
                 // we fast-forward our clock to when the next process is scheduled to arrive
-                int nextArrival = remaining.stream()
-                        .mapToInt(Process::getArrivalTime).min().orElse(currentTime);
+                double nextArrival = remaining.stream()
+                        .mapToDouble(Process::getArrivalTime).min().orElse(currentTime);
                 gantt.add(new GanttEntry("IDLE", currentTime, nextArrival));
                 currentTime = nextArrival;
                 continue;
@@ -45,16 +45,16 @@ public class SjfScheduler implements CpuScheduler {
 
             // here's where we pick the shortest job!
             // sort by burst time first, then break ties using arrival time and PID
-            available.sort(Comparator.comparingInt(Process::getBurstTime)
-                    .thenComparingInt(Process::getArrivalTime)
+            available.sort(Comparator.comparingDouble(Process::getBurstTime)
+                    .thenComparingDouble(Process::getArrivalTime)
                     .thenComparing(Process::getPid));
 
             Process selected = available.get(0);
             remaining.remove(selected);
 
-            int startTime = currentTime;
-            int completionTime = currentTime + selected.getBurstTime();
-            int responseTime = startTime - selected.getArrivalTime();
+            double startTime = currentTime;
+            double completionTime = currentTime + selected.getBurstTime();
+            double responseTime = startTime - selected.getArrivalTime();
 
             gantt.add(new GanttEntry(selected.getPid(), startTime, completionTime));
             results.add(new SchedulingResult(

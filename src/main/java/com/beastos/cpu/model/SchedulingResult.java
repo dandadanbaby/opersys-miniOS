@@ -4,16 +4,16 @@ package com.beastos.cpu.model;
 // we store the input specs plus the computed times so we can display them in our results table.
 public class SchedulingResult {
     private final String pid;
-    private final int arrivalTime;
-    private final int burstTime;
+    private final double arrivalTime;
+    private final double burstTime;
     private final int priority;
-    private final int completionTime;
-    private final int turnaroundTime;
-    private final int waitingTime;
-    private final int responseTime;
+    private final double completionTime;
+    private final double turnaroundTime;
+    private final double waitingTime;
+    private final double responseTime;
 
-    public SchedulingResult(String pid, int arrivalTime, int burstTime, int priority,
-                            int completionTime, int responseTime) {
+    public SchedulingResult(String pid, double arrivalTime, double burstTime, int priority,
+                            double completionTime, double responseTime) {
         this.pid = pid;
         this.arrivalTime = arrivalTime;
         this.burstTime = burstTime;
@@ -28,11 +28,11 @@ public class SchedulingResult {
     }
 
     public String getPid() { return pid; }
-    public int getArrivalTime() { return arrivalTime; }
-    public int getBurstTime() { return burstTime; }
+    public double getArrivalTime() { return arrivalTime; }
+    public double getBurstTime() { return burstTime; }
     public int getPriority() { return priority; }
-    public int getCompletionTime() { return completionTime; }
-    public int getTurnaroundTime() { return turnaroundTime; }
-    public int getWaitingTime() { return waitingTime; }
-    public int getResponseTime() { return responseTime; }
+    public double getCompletionTime() { return completionTime; }
+    public double getTurnaroundTime() { return turnaroundTime; }
+    public double getWaitingTime() { return waitingTime; }
+    public double getResponseTime() { return responseTime; }
 }

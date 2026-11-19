@@ -89,20 +89,20 @@ class SjfSchedulerTest {
         assertEquals(500, output.getResults().size());
         // Shortest burst first: P499(BT=1) should complete first
         SchedulingResult first = output.getResults().stream()
-                .min((a, b) -> Integer.compare(a.getCompletionTime(), b.getCompletionTime()))
+                .min((a, b) -> Double.compare(a.getCompletionTime(), b.getCompletionTime()))
                 .orElseThrow();
         assertEquals("P499", first.getPid());
-        assertEquals(1, first.getCompletionTime());
+        assertEquals(1, first.getCompletionTime(), 0.001);
     }
 
     private void assertResult(List<SchedulingResult> results, String pid,
-                               int expectedCT, int expectedTAT, int expectedWT) {
+                               double expectedCT, double expectedTAT, double expectedWT) {
         SchedulingResult r = results.stream()
                 .filter(res -> res.getPid().equals(pid))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Process " + pid + " not found"));
-        assertEquals(expectedCT, r.getCompletionTime(), pid + " CT");
-        assertEquals(expectedTAT, r.getTurnaroundTime(), pid + " TAT");
-        assertEquals(expectedWT, r.getWaitingTime(), pid + " WT");
+        assertEquals(expectedCT, r.getCompletionTime(), 0.001, pid + " CT");
+        assertEquals(expectedTAT, r.getTurnaroundTime(), 0.001, pid + " TAT");
+        assertEquals(expectedWT, r.getWaitingTime(), 0.001, pid + " WT");
     }
 }

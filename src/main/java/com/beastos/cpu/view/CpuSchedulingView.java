@@ -408,11 +408,11 @@ public class CpuSchedulingView extends ScrollPane {
         pidCol.setPrefWidth(70);
 
         TableColumn<SchedulingResult, String> atCol = new TableColumn<>("Arrival Time");
-        atCol.setCellValueFactory(r -> new SimpleStringProperty(String.valueOf(r.getValue().getArrivalTime())));
+        atCol.setCellValueFactory(r -> new SimpleStringProperty(formatVal(r.getValue().getArrivalTime())));
         atCol.setPrefWidth(85);
 
         TableColumn<SchedulingResult, String> btCol = new TableColumn<>("Burst Time");
-        btCol.setCellValueFactory(r -> new SimpleStringProperty(String.valueOf(r.getValue().getBurstTime())));
+        btCol.setCellValueFactory(r -> new SimpleStringProperty(formatVal(r.getValue().getBurstTime())));
         btCol.setPrefWidth(75);
 
         TableColumn<SchedulingResult, String> prCol = new TableColumn<>("Priority");
@@ -420,15 +420,15 @@ public class CpuSchedulingView extends ScrollPane {
         prCol.setPrefWidth(65);
 
         TableColumn<SchedulingResult, String> ctCol = new TableColumn<>("Completion\nTime");
-        ctCol.setCellValueFactory(r -> new SimpleStringProperty(String.valueOf(r.getValue().getCompletionTime())));
+        ctCol.setCellValueFactory(r -> new SimpleStringProperty(formatVal(r.getValue().getCompletionTime())));
         ctCol.setPrefWidth(90);
 
         TableColumn<SchedulingResult, String> tatCol = new TableColumn<>("Turnaround\nTime (TAT)");
-        tatCol.setCellValueFactory(r -> new SimpleStringProperty(String.valueOf(r.getValue().getTurnaroundTime())));
+        tatCol.setCellValueFactory(r -> new SimpleStringProperty(formatVal(r.getValue().getTurnaroundTime())));
         tatCol.setPrefWidth(100);
 
         TableColumn<SchedulingResult, String> wtCol = new TableColumn<>("Waiting\nTime (WT)");
-        wtCol.setCellValueFactory(r -> new SimpleStringProperty(String.valueOf(r.getValue().getWaitingTime())));
+        wtCol.setCellValueFactory(r -> new SimpleStringProperty(formatVal(r.getValue().getWaitingTime())));
         wtCol.setPrefWidth(85);
 
         resultsTable.getColumns().addAll(pidCol, atCol, btCol, prCol, ctCol, tatCol, wtCol);
@@ -478,8 +478,8 @@ public class CpuSchedulingView extends ScrollPane {
             if (pid.isEmpty()) { errors.add("Row " + (i + 1) + ": Process ID is required."); continue; }
 
             ValidationResult vPid = InputValidator.requireNonBlank(pid, "Process ID");
-            ValidationResult vAt = InputValidator.validateNonNegativeInt(atStr, "Arrival Time");
-            ValidationResult vBt = InputValidator.validatePositiveInt(btStr, "Burst Time");
+            ValidationResult vAt = InputValidator.validateNonNegativeDouble(atStr, "Arrival Time");
+            ValidationResult vBt = InputValidator.validatePositiveDouble(btStr, "Burst Time");
             ValidationResult vPr = InputValidator.validateNonNegativeInt(prStr, "Priority");
 
             if (vPid.hasErrors()) { errors.addAll(vPid.getErrors()); continue; }
@@ -489,8 +489,8 @@ public class CpuSchedulingView extends ScrollPane {
 
             pids.add(pid);
             processes.add(new Process(pid,
-                    Integer.parseInt(atStr),
-                    Integer.parseInt(btStr),
+                    Double.parseDouble(atStr),
+                    Double.parseDouble(btStr),
                     Integer.parseInt(prStr)));
         }
 
@@ -511,16 +511,16 @@ public class CpuSchedulingView extends ScrollPane {
             return;
         }
 
-        // if Round Robin is picked, we must make sure time quantum is a valid positive integer
-        int quantum = 4;
+        // if Round Robin is picked, we must make sure time quantum is a valid positive number
+        double quantum = 4;
         if ("Round Robin".equals(selectedAlgorithm)) {
-            ValidationResult vQ = InputValidator.validatePositiveInt(
+            ValidationResult vQ = InputValidator.validatePositiveDouble(
                     quantumField.getText().trim(), "Time Quantum");
             if (vQ.hasErrors()) {
                 errorLabel.setText(String.join("\n", vQ.getErrors()));
                 return;
             }
-            quantum = Integer.parseInt(quantumField.getText().trim());
+            quantum = Double.parseDouble(quantumField.getText().trim());
         }
 
         // step 2: instantiate whichever scheduling engine the user selected in the tabs
@@ -583,5 +583,13 @@ public class CpuSchedulingView extends ScrollPane {
         errorLabel.setText("");
 
         session.setSimulationState(SimulationState.IDLE);
+    }
+
+    private static String formatVal(double val) {
+        if (Math.abs(val - Math.round(val)) < 1e-6) {
+            return String.valueOf((long) Math.round(val));
+        } else {
+            return String.format(java.util.Locale.US, "%.2f", val);
+        }
     }
 }

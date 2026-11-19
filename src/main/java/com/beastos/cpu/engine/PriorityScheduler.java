@@ -20,7 +20,7 @@ public class PriorityScheduler implements CpuScheduler {
         List<Process> remaining = new ArrayList<>(processes);
         List<GanttEntry> gantt = new ArrayList<>();
         List<SchedulingResult> results = new ArrayList<>();
-        int currentTime = 0;
+        double currentTime = 0;
 
         // keep going until every single process has run
         while (!remaining.isEmpty()) {
@@ -35,8 +35,8 @@ public class PriorityScheduler implements CpuScheduler {
             // if nothing has arrived yet, the CPU is stuck waiting (idle)
             // so we skip time ahead to the next arrival and add an IDLE block to our Gantt chart
             if (available.isEmpty()) {
-                int nextArrival = remaining.stream()
-                        .mapToInt(Process::getArrivalTime).min().orElse(currentTime);
+                double nextArrival = remaining.stream()
+                        .mapToDouble(Process::getArrivalTime).min().orElse(currentTime);
                 gantt.add(new GanttEntry("IDLE", currentTime, nextArrival));
                 currentTime = nextArrival;
                 continue;
@@ -44,7 +44,7 @@ public class PriorityScheduler implements CpuScheduler {
 
             // sort available jobs: smallest priority number first, then arrival time, then PID
             available.sort(Comparator.comparingInt(Process::getPriority)
-                    .thenComparingInt(Process::getArrivalTime)
+                    .thenComparingDouble(Process::getArrivalTime)
                     .thenComparing(Process::getPid));
 
             // grab the winner with the highest priority and remove it from remaining
@@ -53,9 +53,9 @@ public class PriorityScheduler implements CpuScheduler {
 
             // since it's non-preemptive, it runs completely to the end
             // response time is just start time minus arrival time
-            int startTime = currentTime;
-            int completionTime = currentTime + selected.getBurstTime();
-            int responseTime = startTime - selected.getArrivalTime();
+            double startTime = currentTime;
+            double completionTime = currentTime + selected.getBurstTime();
+            double responseTime = startTime - selected.getArrivalTime();
 
             // add this process's execution block to the Gantt chart and save its metrics
             gantt.add(new GanttEntry(selected.getPid(), startTime, completionTime));

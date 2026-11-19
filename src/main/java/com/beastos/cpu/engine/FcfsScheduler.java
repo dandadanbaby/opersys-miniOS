@@ -22,12 +22,12 @@ public class FcfsScheduler implements CpuScheduler {
         // we copy the list and sort by arrival time so processes get handled in the order they arrive
         // if there's a tie, we sort by PID so our simulation has deterministic ordering
         List<Process> sorted = new ArrayList<>(processes);
-        sorted.sort(Comparator.comparingInt(Process::getArrivalTime)
+        sorted.sort(Comparator.comparingDouble(Process::getArrivalTime)
                 .thenComparing(Process::getPid));
 
         List<GanttEntry> gantt = new ArrayList<>();
         List<SchedulingResult> results = new ArrayList<>();
-        int currentTime = 0;
+        double currentTime = 0;
 
         for (Process p : sorted) {
             // if the CPU is free but the next process hasn't arrived yet, we mark that gap as IDLE
@@ -36,8 +36,8 @@ public class FcfsScheduler implements CpuScheduler {
                 currentTime = p.getArrivalTime();
             }
 
-            int startTime = currentTime;
-            int completionTime = currentTime + p.getBurstTime();
+            double startTime = currentTime;
+            double completionTime = currentTime + p.getBurstTime();
 
             gantt.add(new GanttEntry(p.getPid(), startTime, completionTime));
 
