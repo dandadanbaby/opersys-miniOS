@@ -234,8 +234,8 @@ public class FragmentationView extends ScrollPane {
     }
 
     private void addBlockRow(String val) {
-        blockCounter++;
-        Label lbl = new Label("Block " + blockCounter + ":");
+        int nextNum = blockInputRows.getChildren().size() + 1;
+        Label lbl = new Label("Block " + nextNum + ":");
         lbl.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8;");
         lbl.setPrefWidth(70);
         TextField field = new TextField(val);
@@ -246,8 +246,23 @@ public class FragmentationView extends ScrollPane {
         HBox row = new HBox(6, lbl, field, del);
         row.setAlignment(Pos.CENTER_LEFT);
         row.setUserData(field);
-        del.setOnAction(e -> { if (blockInputRows.getChildren().size() > 1) blockInputRows.getChildren().remove(row); });
+        del.setOnAction(e -> {
+            if (blockInputRows.getChildren().size() > 1) {
+                blockInputRows.getChildren().remove(row);
+                renumberBlocks();
+            }
+        });
         blockInputRows.getChildren().add(row);
+        renumberBlocks();
+    }
+
+    private void renumberBlocks() {
+        for (int i = 0; i < blockInputRows.getChildren().size(); i++) {
+            HBox row = (HBox) blockInputRows.getChildren().get(i);
+            Label lbl = (Label) row.getChildren().get(0);
+            lbl.setText("Block " + (i + 1) + ":");
+        }
+        blockCounter = blockInputRows.getChildren().size();
     }
 
     private void addProcessRow() {
@@ -255,8 +270,8 @@ public class FragmentationView extends ScrollPane {
     }
 
     private void addProcessRow(String val) {
-        processCounter++;
-        Label lbl = new Label("P" + processCounter + ":");
+        int nextNum = processInputRows.getChildren().size() + 1;
+        Label lbl = new Label("P" + nextNum + ":");
         lbl.setStyle("-fx-font-size: 12px; -fx-text-fill: #2dd4bf; -fx-font-weight: bold;");
         lbl.setPrefWidth(40);
         TextField field = new TextField(val);
@@ -267,8 +282,23 @@ public class FragmentationView extends ScrollPane {
         HBox row = new HBox(6, lbl, field, del);
         row.setAlignment(Pos.CENTER_LEFT);
         row.setUserData(new Object[]{lbl, field});
-        del.setOnAction(e -> { if (processInputRows.getChildren().size() > 1) processInputRows.getChildren().remove(row); });
+        del.setOnAction(e -> {
+            if (processInputRows.getChildren().size() > 1) {
+                processInputRows.getChildren().remove(row);
+                renumberProcesses();
+            }
+        });
         processInputRows.getChildren().add(row);
+        renumberProcesses();
+    }
+
+    private void renumberProcesses() {
+        for (int i = 0; i < processInputRows.getChildren().size(); i++) {
+            HBox row = (HBox) processInputRows.getChildren().get(i);
+            Label lbl = (Label) row.getChildren().get(0);
+            lbl.setText("P" + (i + 1) + ":");
+        }
+        processCounter = processInputRows.getChildren().size();
     }
 
     // ----------------------------------------------------------------
