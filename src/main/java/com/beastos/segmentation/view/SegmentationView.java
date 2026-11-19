@@ -53,7 +53,7 @@ public class SegmentationView extends ScrollPane {
     private final Label physAddrValue = new Label("—");
 
     // Results
-    private final Canvas memoryMap = new Canvas(460, 300);
+    private final Canvas memoryMap = new Canvas(460, 340);
     private final VBox validationLog = new VBox(6);
     private final Label errorLabel = new Label();
 
@@ -296,6 +296,7 @@ public class SegmentationView extends ScrollPane {
 
         if (segments.isEmpty()) { drawEmptyMemoryMap(); return; }
 
+        // sort by base address so segments are ordered in the chart
         List<Segment> sorted = new ArrayList<>(segments);
         sorted.sort(Comparator.comparingInt(Segment::getBase));
 
@@ -303,61 +304,74 @@ public class SegmentationView extends ScrollPane {
         for (Segment s : sorted) maxAddr = Math.max(maxAddr, s.getBase() + s.getLimit());
         if (maxAddr == 0) maxAddr = 1;
 
-        double leftMargin = 14;
+        // layout margins — left margin is wide enough for Y-axis labels like "Seg 10"
+        double leftMargin = 54;
         double rightMargin = 14;
-        double topMargin = 6;
-        double axisHeight = 28;
+        double topMargin = 10;
+        double bottomMargin = 36; // space for X-axis label + ticks
         double chartW = w - leftMargin - rightMargin;
+        double chartH = h - topMargin - bottomMargin;
+        if (chartH < 40) chartH = 40;
 
-        // The bar fills most of the vertical space
-        double barH = h - topMargin - axisHeight - 6;
-        if (barH < 40) barH = 40;
+        // each segment gets its own horizontal row (like a horizontal bar chart)
+        int segCount = sorted.size();
+        double rowH = chartH / segCount;
+        double barPad = Math.max(rowH * 0.15, 2); // padding inside each row
 
-        // --- Full-width memory bar background ---
-        gc.setFill(Color.web("#0f172a"));
-        gc.fillRoundRect(leftMargin, topMargin, chartW, barH, 8, 8);
-
-        // Border
-        gc.setStroke(Color.web("#1e293b"));
+        // --- vertical axis (Y-axis) line ---
+        gc.setStroke(Color.web("#334155"));
         gc.setLineWidth(1);
-        gc.strokeRoundRect(leftMargin, topMargin, chartW, barH, 8, 8);
+        gc.strokeLine(leftMargin, topMargin, leftMargin, topMargin + chartH);
 
-        // --- Draw segments ---
-        for (Segment seg : sorted) {
+        // --- horizontal axis (X-axis) line ---
+        double axisY = topMargin + chartH;
+        gc.strokeLine(leftMargin, axisY, leftMargin + chartW, axisY);
+
+        // --- draw segment bars row by row ---
+        for (int i = 0; i < segCount; i++) {
+            Segment seg = sorted.get(i);
+            double rowY = topMargin + i * rowH;
+
+            // Y-axis label for this segment
+            gc.setFill(Color.web("#94a3b8"));
+            gc.setFont(Font.font("Segoe UI", 11));
+            String yLabel = "Seg " + seg.getSegmentNumber();
+            gc.fillText(yLabel, 4, rowY + rowH / 2 + 4);
+
+            // Y-axis tick mark
+            gc.setStroke(Color.web("#475569"));
+            gc.strokeLine(leftMargin - 4, rowY + rowH / 2, leftMargin, rowY + rowH / 2);
+
+            // horizontal grid line (subtle) for each row boundary
+            gc.setStroke(Color.web("#1e293b"));
+            gc.strokeLine(leftMargin, rowY, leftMargin + chartW, rowY);
+
+            // segment bar positioned according to its base address and limit
             double x = leftMargin + (chartW * seg.getBase() / maxAddr);
             double bw = Math.max(chartW * seg.getLimit() / maxAddr, 4);
+            double barY = rowY + barPad;
+            double barHeight = rowH - barPad * 2;
+            if (barHeight < 4) barHeight = 4;
 
             Color color = SEG_COLORS[seg.getSegmentNumber() % SEG_COLORS.length];
-
-            // Segment block
             gc.setFill(color);
-            gc.fillRoundRect(x, topMargin + 1, bw, barH - 2, 4, 4);
+            gc.fillRoundRect(x, barY, bw, barHeight, 4, 4);
 
-            // Label: "Seg N" centered, with base–end below in smaller text
+            // label inside the bar if there's enough room
             gc.setFill(Color.web("#0b1019"));
-            gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-            String name = "Seg " + seg.getSegmentNumber();
-            if (bw > 50) {
-                gc.fillText(name, x + (bw - name.length() * 7) / 2, topMargin + barH / 2 - 2);
-                gc.setFont(Font.font("Segoe UI", 9));
+            if (bw > 60 && barHeight > 14) {
+                gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 10));
                 String range = seg.getBase() + "–" + (seg.getBase() + seg.getLimit());
-                gc.fillText(range, x + (bw - range.length() * 5) / 2, topMargin + barH / 2 + 12);
-            } else if (bw > 20) {
-                gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 9));
-                gc.fillText("S" + seg.getSegmentNumber(), x + (bw - 10) / 2, topMargin + barH / 2 + 4);
+                gc.fillText(range, x + 4, barY + barHeight / 2 + 4);
+            } else if (bw > 20 && barHeight > 10) {
+                gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, 8));
+                gc.fillText(String.valueOf(seg.getBase()), x + 2, barY + barHeight / 2 + 3);
             }
         }
 
-        // --- Horizontal axis ---
-        double axisY = topMargin + barH + 4;
-        gc.setStroke(Color.web("#334155"));
-        gc.setLineWidth(1);
-        gc.strokeLine(leftMargin, axisY, leftMargin + chartW, axisY);
-
-        // Even tick marks along the axis (5 ticks)
+        // --- X-axis tick marks and labels (Physical Address) ---
         int tickCount = 5;
         gc.setFont(Font.font("Segoe UI", 9));
-        gc.setFill(Color.web("#64748b"));
         for (int i = 0; i <= tickCount; i++) {
             double x = leftMargin + (chartW * i / tickCount);
             int addrVal = Math.round((float) maxAddr * i / tickCount);
@@ -367,6 +381,12 @@ public class SegmentationView extends ScrollPane {
             gc.setFill(Color.web("#64748b"));
             gc.fillText(label, x - label.length() * 3, axisY + 16);
         }
+
+        // X-axis title
+        gc.setFont(Font.font("Segoe UI", 10));
+        gc.setFill(Color.web("#64748b"));
+        String xTitle = "Physical Address";
+        gc.fillText(xTitle, leftMargin + chartW / 2 - xTitle.length() * 3, axisY + 30);
     }
 
     private void runTranslation() {
