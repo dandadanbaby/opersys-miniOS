@@ -52,7 +52,7 @@ public class BeastOSApp extends Application {
                 getClass().getResource("/css/beast-os-theme.css").toExternalForm());
 
         // window bounds — we set 1024x700 minimum so Gantt charts and memory tables don't get squished
-        stage.setScene(scene);
+        stage.setScene(scene); 
         stage.setTitle("BEAST OS — Interactive Operating System Workbench");
         stage.setMinWidth(1024);
         stage.setMinHeight(700);

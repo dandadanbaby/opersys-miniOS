@@ -145,6 +145,34 @@ class PagingEngineTest {
     }
 
     @Test
+    void testPageOffsetRequestAndTrap() {
+        int pageSize = 512;
+        int[] pageTable = {14, 3, 9, 21, 7, 12, 0, 5};
+
+        List<PagingEngine.PagingRequest> requests = List.of(
+                new PagingEngine.PagingRequest(5, 120), // Valid
+                new PagingEngine.PagingRequest(5, 600)  // Offset 600 >= 512 -> Trap
+        );
+
+        PagingOutput output = engine.translateRequests(pageSize, pageTable, requests);
+        assertEquals(2, output.getTranslationCount());
+
+        TranslationResult valid = output.getTranslations().get(0);
+        assertTrue(valid.isValid());
+        assertEquals(5, valid.getPageNumber());
+        assertEquals(120, valid.getOffset());
+        assertEquals(12, valid.getFrameNumber());
+        assertEquals(12 * 512 + 120, valid.getPhysicalAddress()); // 6264
+
+        TranslationResult trap = output.getTranslations().get(1);
+        assertFalse(trap.isValid());
+        assertEquals(5, trap.getPageNumber());
+        assertEquals(600, trap.getOffset());
+        assertTrue(trap.getStatus().contains("TRAP"));
+        assertTrue(trap.getStatus().contains("exceeds Page Size"));
+    }
+
+    @Test
     void testSinglePageSingleAddress() {
         int[] pageTable = {42};
         int[] addresses = {50};

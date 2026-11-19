@@ -19,6 +19,104 @@ import java.util.List;
 public class PagingEngine {
 
     /**
+     * Represents a request for translation: either a flat logical address
+     * or an explicit (pageNumber, offset) pair.
+     */
+    public static class PagingRequest {
+        private final int pageNumber;
+        private final int offset;
+        private final int rawLogical;
+        private final boolean isPageOffset;
+
+        public PagingRequest(int logicalAddress) {
+            this.rawLogical = logicalAddress;
+            this.pageNumber = -1;
+            this.offset = -1;
+            this.isPageOffset = false;
+        }
+
+        public PagingRequest(int pageNumber, int offset) {
+            this.pageNumber = pageNumber;
+            this.offset = offset;
+            this.rawLogical = -1;
+            this.isPageOffset = true;
+        }
+
+        public int getPageNumber() { return pageNumber; }
+        public int getOffset() { return offset; }
+        public int getRawLogical() { return rawLogical; }
+        public boolean isPageOffset() { return isPageOffset; }
+    }
+
+    /**
+     * Create a paging output with a user-defined page table, translating
+     * a list of PagingRequest objects (which can be either raw logical addresses or (page, offset) pairs).
+     */
+    public PagingOutput translateRequests(int pageSize, int[] pageTable, List<PagingRequest> requests) {
+        int totalPages = pageTable.length;
+        List<TranslationResult> results = new ArrayList<>();
+
+        for (int i = 0; i < requests.size(); i++) {
+            PagingRequest req = requests.get(i);
+            String reqId = "P" + (i + 1);
+
+            int pageNumber;
+            int offset;
+            int logical;
+
+            if (req.isPageOffset()) {
+                pageNumber = req.getPageNumber();
+                offset = req.getOffset();
+                logical = (pageNumber >= 0 && pageNumber < totalPages) ? (pageNumber * pageSize + offset) : -1;
+
+                if (pageNumber >= totalPages || pageNumber < 0) {
+                    results.add(new TranslationResult(
+                            reqId, logical, pageNumber, offset,
+                            -1, -1, false,
+                            "TRAP: Out of bounds (>" + (totalPages - 1) + ")"
+                    ));
+                } else if (offset >= pageSize || offset < 0) {
+                    results.add(new TranslationResult(
+                            reqId, logical, pageNumber, offset,
+                            pageTable[pageNumber], -1, false,
+                            "TRAP: Offset " + offset + " exceeds Page Size (" + pageSize + ")"
+                    ));
+                } else {
+                    int frame = pageTable[pageNumber];
+                    int physicalAddress = frame * pageSize + offset;
+                    results.add(new TranslationResult(
+                            reqId, logical, pageNumber, offset,
+                            frame, physicalAddress, true,
+                            "SUCCESS / VALID"
+                    ));
+                }
+            } else {
+                logical = req.getRawLogical();
+                pageNumber = logical / pageSize;
+                offset = logical % pageSize;
+
+                if (pageNumber >= totalPages || pageNumber < 0) {
+                    results.add(new TranslationResult(
+                            reqId, logical, pageNumber, offset,
+                            -1, -1, false,
+                            "TRAP: Out of bounds (>" + (totalPages - 1) + ")"
+                    ));
+                } else {
+                    int frame = pageTable[pageNumber];
+                    int physicalAddress = frame * pageSize + offset;
+                    results.add(new TranslationResult(
+                            reqId, logical, pageNumber, offset,
+                            frame, physicalAddress, true,
+                            "SUCCESS / VALID"
+                    ));
+                }
+            }
+        }
+
+        return new PagingOutput(pageSize, totalPages, pageTable, results);
+    }
+
+    /**
      * Create a paging output with a user-defined page table, then translate
      * a list of logical addresses.
      *
@@ -28,37 +126,11 @@ public class PagingEngine {
      * @return complete paging output with page table and translation results
      */
     public PagingOutput translate(int pageSize, int[] pageTable, int[] logicalAddresses) {
-        int totalPages = pageTable.length;
-        List<TranslationResult> results = new ArrayList<>();
-
-        for (int i = 0; i < logicalAddresses.length; i++) {
-            int logical = logicalAddresses[i];
-            String reqId = "P" + (i + 1);
-
-            int pageNumber = logical / pageSize;
-            int offset = logical % pageSize;
-
-            if (pageNumber >= totalPages || pageNumber < 0) {
-                // Out of bounds — trap
-                results.add(new TranslationResult(
-                        reqId, logical, pageNumber, offset,
-                        -1, -1, false,
-                        "TRAP: Out of bounds (>" + (totalPages - 1) + ")"
-                ));
-            } else {
-                int frame = pageTable[pageNumber];
-                int physicalAddress = frame * pageSize + offset;
-
-                // Validate offset < pageSize (always true by modulo, but check boundary)
-                results.add(new TranslationResult(
-                        reqId, logical, pageNumber, offset,
-                        frame, physicalAddress, true,
-                        "SUCCESS / VALID"
-                ));
-            }
+        List<PagingRequest> requests = new ArrayList<>();
+        for (int addr : logicalAddresses) {
+            requests.add(new PagingRequest(addr));
         }
-
-        return new PagingOutput(pageSize, totalPages, pageTable, results);
+        return translateRequests(pageSize, pageTable, requests);
     }
 
     /**

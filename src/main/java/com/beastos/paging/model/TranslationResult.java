@@ -36,10 +36,13 @@ public class TranslationResult {
     public String getStatus() { return status; }
 
     /**
-     * Display string for the logical address, e.g. "14348 (Page 3)"
+     * Display string for the logical address, e.g. "14348 (Page 3)" or "Page 5, Offset 600"
      */
     public String getLogicalAddressDisplay() {
-        return logicalAddress + " (Page " + pageNumber + ")";
+        if (logicalAddress < 0) {
+            return "Page " + pageNumber + ", Offset " + offset;
+        }
+        return logicalAddress + " (Page " + pageNumber + ", Off " + offset + ")";
     }
 
     /**

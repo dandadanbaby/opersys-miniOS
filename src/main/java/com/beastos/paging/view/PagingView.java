@@ -272,7 +272,7 @@ public class PagingView extends ScrollPane {
 
     private void addAddressRow(String addr) {
         TextField addrField = new TextField(addr);
-        addrField.setPromptText("Logical address (e.g. 14348)");
+        addrField.setPromptText("Address (e.g. 14348 or 2, 300)");
         addrField.setPrefWidth(250);
 
         Button delBtn = new Button("✕");
@@ -418,25 +418,42 @@ public class PagingView extends ScrollPane {
             }
         }
 
-        // Parse logical addresses
-        List<Integer> addresses = new ArrayList<>();
+        // Parse logical addresses or (page, offset)
+        List<PagingEngine.PagingRequest> requests = new ArrayList<>();
         for (int i = 0; i < addressRows.getChildren().size(); i++) {
             HBox row = (HBox) addressRows.getChildren().get(i);
             TextField field = (TextField) row.getUserData();
             String text = field.getText().trim();
             if (text.isEmpty()) continue;
-            try {
-                addresses.add(Integer.valueOf(text));
-            } catch (NumberFormatException e) {
-                errorLabel.setText("Address #" + (i + 1) + " must be a valid integer."); return;
+
+            String stripped = text.replaceAll("[()a-zA-Z=]", " ").trim();
+            String[] parts = stripped.split("[,\\s:]+");
+            if (parts.length == 2) {
+                try {
+                    int p = Integer.parseInt(parts[0]);
+                    int off = Integer.parseInt(parts[1]);
+                    requests.add(new PagingEngine.PagingRequest(p, off));
+                } catch (NumberFormatException e) {
+                    errorLabel.setText("Address #" + (i + 1) + " must be a valid integer or 'page, offset'.");
+                    return;
+                }
+            } else if (parts.length == 1) {
+                try {
+                    int addr = Integer.parseInt(parts[0]);
+                    requests.add(new PagingEngine.PagingRequest(addr));
+                } catch (NumberFormatException e) {
+                    errorLabel.setText("Address #" + (i + 1) + " must be a valid integer or 'page, offset'.");
+                    return;
+                }
+            } else {
+                errorLabel.setText("Address #" + (i + 1) + " format invalid. Use e.g. 14348 or 2, 300.");
+                return;
             }
         }
 
-        if (addresses.isEmpty()) {
-            errorLabel.setText("At least one logical address is required."); return;
+        if (requests.isEmpty()) {
+            errorLabel.setText("At least one address is required."); return;
         }
-
-        int[] addrArray = addresses.stream().mapToInt(Integer::intValue).toArray();
 
         // Validate
         List<String> errors = engine.validate(pageSize, pageTable);
@@ -444,7 +461,7 @@ public class PagingView extends ScrollPane {
 
         // Run translation
         session.setSimulationState(SimulationState.RUNNING);
-        PagingOutput output = engine.translate(pageSize, pageTable, addrArray);
+        PagingOutput output = engine.translateRequests(pageSize, pageTable, requests);
         session.setSimulationState(SimulationState.COMPLETED);
         session.incrementSimulationsCompleted();
 
