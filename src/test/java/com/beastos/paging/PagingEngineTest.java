@@ -3,6 +3,8 @@ package com.beastos.paging;
 import com.beastos.paging.engine.PagingEngine;
 import com.beastos.paging.model.PagingOutput;
 import com.beastos.paging.model.TranslationResult;
+import com.beastos.paging.model.TwoLevelPagingOutput;
+import com.beastos.paging.model.TwoLevelTranslationResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -184,5 +186,98 @@ class PagingEngineTest {
         assertEquals(50, t.getOffset());     // 50%100=50
         assertEquals(42, t.getFrameNumber());
         assertEquals(42 * 100 + 50, t.getPhysicalAddress());
+    }
+
+    // --- Two-Level (Hierarchical) Paging Tests ---
+
+    @Test
+    void testTwoLevel_FlatAddresses() {
+        int pageSize = 1024;
+        int innerTableSize = 4;
+        int[][] directory = {
+                {2, 5, 8, 1},
+                {7, 3, 10, 4},
+                {0, 6, 9, 11},
+                {12, 13, 14, 15}
+        };
+
+        // Address 0 -> page 0 -> p1=0, p2=0, offset=0 -> Frame 2 -> Phys = 2*1024 = 2048
+        // Address 5120 -> page 5 (5120/1024) -> p1=1, p2=1, offset=0 -> Frame 3 -> Phys = 3*1024 = 3072
+        int[] addresses = {0, 5120};
+        TwoLevelPagingOutput output = engine.translateTwoLevelAddresses(pageSize, innerTableSize, directory, addresses);
+
+        assertEquals(2, output.getTranslationCount());
+        assertEquals(2, output.getValidCount());
+
+        TwoLevelTranslationResult r1 = output.getTranslations().get(0);
+        assertTrue(r1.isValid());
+        assertEquals(0, r1.getOuterPage());
+        assertEquals(0, r1.getInnerPage());
+        assertEquals(0, r1.getOffset());
+        assertEquals(2, r1.getFrameNumber());
+        assertEquals(2048, r1.getPhysicalAddress());
+
+        TwoLevelTranslationResult r2 = output.getTranslations().get(1);
+        assertTrue(r2.isValid());
+        assertEquals(1, r2.getOuterPage());
+        assertEquals(1, r2.getInnerPage());
+        assertEquals(0, r2.getOffset());
+        assertEquals(3, r2.getFrameNumber());
+        assertEquals(3072, r2.getPhysicalAddress());
+    }
+
+    @Test
+    void testTwoLevel_TupleRequestsAndTraps() {
+        int pageSize = 1024;
+        int innerTableSize = 4;
+        int[][] directory = {
+                {2, 5, 8, 1},
+                {7, 3, 10, -1}, // p1=1, p2=3 unmapped (-1)
+                {0, 6, 9, 11},
+                {12, 13, 14, 15}
+        };
+
+        List<PagingEngine.TwoLevelPagingRequest> requests = List.of(
+                new PagingEngine.TwoLevelPagingRequest(1, 2, 500),  // Valid: dir[1][2]=10 -> 10*1024+500=10740
+                new PagingEngine.TwoLevelPagingRequest(1, 3, 200),  // Trap: unmapped page fault (-1)
+                new PagingEngine.TwoLevelPagingRequest(4, 0, 100),  // Trap: p1=4 >= 4 out of bounds
+                new PagingEngine.TwoLevelPagingRequest(0, 5, 100),  // Trap: p2=5 >= 4 out of bounds
+                new PagingEngine.TwoLevelPagingRequest(0, 0, 2000)  // Trap: offset 2000 >= 1024
+        );
+
+        TwoLevelPagingOutput output = engine.translateTwoLevel(pageSize, innerTableSize, directory, requests);
+
+        assertEquals(5, output.getTranslationCount());
+        assertEquals(1, output.getValidCount());
+        assertEquals(4, output.getInvalidCount());
+
+        // Valid
+        TwoLevelTranslationResult r1 = output.getTranslations().get(0);
+        assertTrue(r1.isValid());
+        assertEquals(1, r1.getOuterPage());
+        assertEquals(2, r1.getInnerPage());
+        assertEquals(500, r1.getOffset());
+        assertEquals(10, r1.getFrameNumber());
+        assertEquals(10740, r1.getPhysicalAddress());
+
+        // Page Fault unmapped
+        TwoLevelTranslationResult r2 = output.getTranslations().get(1);
+        assertFalse(r2.isValid());
+        assertTrue(r2.getStatus().contains("Page Fault") || r2.getStatus().contains("not mapped"));
+
+        // Outer bounds
+        TwoLevelTranslationResult r3 = output.getTranslations().get(2);
+        assertFalse(r3.isValid());
+        assertTrue(r3.getStatus().contains("Outer Page"));
+
+        // Inner bounds
+        TwoLevelTranslationResult r4 = output.getTranslations().get(3);
+        assertFalse(r4.isValid());
+        assertTrue(r4.getStatus().contains("Inner Page"));
+
+        // Offset trap
+        TwoLevelTranslationResult r5 = output.getTranslations().get(4);
+        assertFalse(r5.isValid());
+        assertTrue(r5.getStatus().contains("exceeds Page Size"));
     }
 }

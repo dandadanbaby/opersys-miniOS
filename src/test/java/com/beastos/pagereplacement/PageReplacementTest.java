@@ -180,11 +180,89 @@ class PageReplacementTest {
     void testHitPlusFaultEqualsTotal() {
         int[] ref = {7, 0, 1, 2, 0, 3, 0, 4};
         for (PageReplacementAlgorithm algo : new PageReplacementAlgorithm[]{
-                new FifoReplacement(), new LruReplacement(), new OptimalReplacement()}) {
+                new FifoReplacement(), new LruReplacement(), new OptimalReplacement(),
+                new SecondChanceReplacement(), new NruReplacement(), new NfuReplacement()}) {
             PageReplacementOutput output = algo.simulate(ref, 3);
             assertEquals(output.getTotalRequests(), output.getHitCount() + output.getFaultCount(),
                     algo.getAlgorithmName() + ": hits + faults must equal total");
         }
+    }
+
+    // --- Second Chance Tests ---
+
+    @Test
+    void testSecondChance_ClassicString() {
+        SecondChanceReplacement sc = new SecondChanceReplacement();
+        PageReplacementOutput output = sc.simulate(CLASSIC_REF, 3);
+
+        assertEquals("Second Chance", output.getAlgorithmName());
+        assertEquals(20, output.getTotalRequests());
+        assertEquals(3, output.getFrameCount());
+        assertTrue(output.getFaultCount() > 0);
+        assertEquals(output.getTotalRequests(), output.getHitCount() + output.getFaultCount());
+    }
+
+    @Test
+    void testSecondChance_SecondChancePreventsImmediateEviction() {
+        SecondChanceReplacement sc = new SecondChanceReplacement();
+        // 1, 2, 3 load into frames 0, 1, 2 (all refBits = true)
+        // 1 is accessed again (HIT) -> refBit remains true
+        // 4 arrives (FAULT) -> frame 0 (1) has refBit true, gets cleared to false, advances
+        // frame 1 (2) has refBit true, cleared to false, advances
+        // frame 2 (3) has refBit true, cleared to false, advances
+        // frame 0 (1) now has refBit false, but wait, pointer checked frame 0 first, cleared it,
+        // then 1, then 2, then back to 0 where bit is 0, so 1 is evicted.
+        int[] ref = {1, 2, 3, 2, 4}; // here 2 was hit
+        PageReplacementOutput output = sc.simulate(ref, 3);
+        assertEquals(4, output.getFaultCount());
+        assertEquals(1, output.getHitCount());
+    }
+
+    // --- NFU Tests ---
+
+    @Test
+    void testNfu_ClassicString() {
+        NfuReplacement nfu = new NfuReplacement();
+        PageReplacementOutput output = nfu.simulate(CLASSIC_REF, 3);
+
+        assertEquals("NFU", output.getAlgorithmName());
+        assertEquals(20, output.getTotalRequests());
+        assertEquals(output.getTotalRequests(), output.getHitCount() + output.getFaultCount());
+    }
+
+    @Test
+    void testNfu_FrequentlyUsedPreserved() {
+        NfuReplacement nfu = new NfuReplacement();
+        // Page 1 is referenced 3 times, page 2 once, page 3 once.
+        // When 4 arrives, page 2 should be evicted because it has lower frequency than page 1.
+        int[] ref = {1, 1, 1, 2, 3, 4};
+        PageReplacementOutput output = nfu.simulate(ref, 3);
+
+        assertEquals(6, output.getTotalRequests());
+        assertEquals(2, output.getHitCount()); // 1 hit twice
+        assertEquals(4, output.getFaultCount());
+    }
+
+    // --- NRU Tests ---
+
+    @Test
+    void testNru_ClassicString() {
+        NruReplacement nru = new NruReplacement();
+        PageReplacementOutput output = nru.simulate(CLASSIC_REF, 3);
+
+        assertEquals("NRU", output.getAlgorithmName());
+        assertEquals(20, output.getTotalRequests());
+        assertEquals(output.getTotalRequests(), output.getHitCount() + output.getFaultCount());
+    }
+
+    @Test
+    void testNru_AllSamePage() {
+        NruReplacement nru = new NruReplacement();
+        int[] ref = {4, 4, 4, 4};
+        PageReplacementOutput output = nru.simulate(ref, 2);
+
+        assertEquals(1, output.getFaultCount());
+        assertEquals(3, output.getHitCount());
     }
 
     @Test

@@ -174,7 +174,7 @@ public class PageReplacementView extends ScrollPane {
     }
 
     private HBox createAlgorithmTabs() {
-        String[] algorithms = {"FIFO", "LRU", "Optimal"};
+        String[] algorithms = {"FIFO", "LRU", "Optimal", "Second Chance", "NRU", "NFU"};
         HBox tabBar = new HBox(8);
         tabBar.setAlignment(Pos.CENTER_LEFT);
 
@@ -209,6 +209,7 @@ public class PageReplacementView extends ScrollPane {
             tab.getStyleClass().remove("algo-tab-active");
             if (tab.getText().equals(algo)) tab.getStyleClass().add("algo-tab-active");
         }
+        runSimulation();
     }
 
     // ----------------------------------------------------------------
@@ -390,6 +391,9 @@ public class PageReplacementView extends ScrollPane {
             case "FIFO" -> new FifoReplacement();
             case "LRU" -> new LruReplacement();
             case "Optimal" -> new OptimalReplacement();
+            case "Second Chance" -> new SecondChanceReplacement();
+            case "NRU" -> new NruReplacement();
+            case "NFU" -> new NfuReplacement();
             default -> new FifoReplacement();
         };
 
@@ -413,7 +417,12 @@ public class PageReplacementView extends ScrollPane {
         int frameCount = frameCountSpinner.getValue();
 
         PageReplacementAlgorithm[] algorithms = {
-                new FifoReplacement(), new LruReplacement(), new OptimalReplacement()
+                new FifoReplacement(),
+                new LruReplacement(),
+                new OptimalReplacement(),
+                new SecondChanceReplacement(),
+                new NruReplacement(),
+                new NfuReplacement()
         };
 
         session.setSimulationState(SimulationState.RUNNING);
