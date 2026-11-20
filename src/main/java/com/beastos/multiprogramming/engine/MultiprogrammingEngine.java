@@ -5,9 +5,29 @@ import java.util.*;
 
 public class MultiprogrammingEngine {
 
+    public enum ExecutionMode {
+        PROCESSOR_SHARING("Processor Sharing (1/nj)"),
+        ROUND_ROBIN("Round Robin");
+
+        private final String displayName;
+        ExecutionMode(String displayName) { this.displayName = displayName; }
+        public String getDisplayName() { return displayName; }
+    }
+
     private static final double EPS = 1e-6;
 
     public MultiprogrammingOutput simulate(List<ProgramProcess> requests) {
+        return simulate(requests, ExecutionMode.PROCESSOR_SHARING, 0.2);
+    }
+
+    public MultiprogrammingOutput simulate(List<ProgramProcess> requests, ExecutionMode mode, double timeQuantum) {
+        if (mode == ExecutionMode.ROUND_ROBIN) {
+            return simulateRoundRobin(requests, timeQuantum);
+        }
+        return simulateProcessorSharing(requests);
+    }
+
+    public MultiprogrammingOutput simulateProcessorSharing(List<ProgramProcess> requests) {
         if (requests == null || requests.isEmpty()) {
             return new MultiprogrammingOutput(0, 0, 0, 0, 0, 0, 0, List.of(), List.of());
         }
@@ -111,6 +131,114 @@ public class MultiprogrammingEngine {
 
         return new MultiprogrammingOutput(
                 requests.size(), maxNj, round3(startTime), round3(time),
+                round3(totalBurst), round3(cpuUtil), round3(avgTat), completedJobs, rows
+        );
+    }
+
+    public MultiprogrammingOutput simulateRoundRobin(List<ProgramProcess> requests, double timeQuantum) {
+        if (requests == null || requests.isEmpty()) {
+            return new MultiprogrammingOutput(0, 0, 0, 0, 0, 0, 0, List.of(), List.of());
+        }
+        if (timeQuantum <= 0) timeQuantum = 0.2;
+
+        List<ProgramProcess> pending = new ArrayList<>(requests);
+        pending.sort(Comparator.comparingDouble(ProgramProcess::getArrivalTime));
+
+        Queue<ProgramProcess> readyQueue = new LinkedList<>();
+        Map<String, Double> left = new LinkedHashMap<>();
+        Map<String, Double> finishMap = new HashMap<>();
+        List<String[]> rows = new ArrayList<>();
+
+        double startTime = pending.get(0).getArrivalTime();
+        double time = startTime;
+        double activeCpuTime = 0.0;
+        int maxConcurrency = 0;
+
+        // Initial arrival(s) at startTime
+        List<String> initEvents = new ArrayList<>();
+        while (!pending.isEmpty() && Math.abs(pending.get(0).getArrivalTime() - time) < EPS) {
+            ProgramProcess p = pending.remove(0);
+            readyQueue.add(p);
+            left.put(p.getPid(), p.getBurstTime());
+            initEvents.add(p.getPid().toLowerCase() + " a/s");
+        }
+        maxConcurrency = Math.max(maxConcurrency, readyQueue.size());
+        rows.add(new String[]{fmt(time), String.join(", ", initEvents), String.valueOf(readyQueue.size()), "1.0", "0", "0", formatLeft(new ArrayList<>(readyQueue), left)});
+
+        while (!readyQueue.isEmpty() || !pending.isEmpty()) {
+            if (readyQueue.isEmpty()) {
+                time = pending.get(0).getArrivalTime();
+                List<String> ev = new ArrayList<>();
+                while (!pending.isEmpty() && Math.abs(pending.get(0).getArrivalTime() - time) < EPS) {
+                    ProgramProcess p = pending.remove(0);
+                    readyQueue.add(p);
+                    left.put(p.getPid(), p.getBurstTime());
+                    ev.add(p.getPid().toLowerCase() + " a/s");
+                }
+                maxConcurrency = Math.max(maxConcurrency, readyQueue.size());
+                rows.add(new String[]{fmt(time), String.join(", ", ev), String.valueOf(readyQueue.size()), "1.0", "0", "0", formatLeft(new ArrayList<>(readyQueue), left)});
+                continue;
+            }
+
+            maxConcurrency = Math.max(maxConcurrency, readyQueue.size());
+            ProgramProcess current = readyQueue.poll();
+            double rem = left.get(current.getPid());
+
+            double slice = Math.min(timeQuantum, rem);
+            double et = slice;
+            double hw = slice;
+            time += et;
+            activeCpuTime += et;
+            rem = Math.max(0, rem - slice);
+            left.put(current.getPid(), rem);
+
+            List<String> events = new ArrayList<>();
+
+            // Check if any new jobs arrived during this execution window (arrived <= time)
+            while (!pending.isEmpty() && pending.get(0).getArrivalTime() <= time + EPS) {
+                ProgramProcess arr = pending.remove(0);
+                readyQueue.add(arr);
+                left.put(arr.getPid(), arr.getBurstTime());
+                events.add(arr.getPid().toLowerCase() + " a/s");
+            }
+
+            if (rem < EPS) {
+                left.put(current.getPid(), 0.0);
+                finishMap.put(current.getPid(), time);
+                events.add(current.getPid().toLowerCase() + " t");
+            } else {
+                readyQueue.add(current); // Re-queue at the end
+                events.add(current.getPid().toLowerCase() + " slice");
+            }
+
+            List<ProgramProcess> snapshot = new ArrayList<>(readyQueue);
+            if (rem < EPS) {
+                snapshot.add(0, current);
+            }
+            rows.add(new String[]{
+                    fmt(time), String.join(", ", events), String.valueOf(readyQueue.size()),
+                    "1.0", fmt(et), fmt(hw), formatLeft(snapshot, left)
+            });
+        }
+
+        List<ProgramProcess> completedJobs = new ArrayList<>();
+        double totalTurnaround = 0.0;
+        double totalBurst = 0.0;
+        for (ProgramProcess req : requests) {
+            double fin = finishMap.getOrDefault(req.getPid(), time);
+            double tat = fin - req.getArrivalTime();
+            totalTurnaround += tat;
+            totalBurst += req.getBurstTime();
+            completedJobs.add(new ProgramProcess(req.getPid(), req.getArrivalTime(), req.getBurstTime(),
+                    ProcessStatus.COMPLETED, round3(fin), round3(tat)));
+        }
+
+        double span = Math.max(EPS, time - startTime);
+        double cpuUtil = Math.min(100.0, (activeCpuTime / span) * 100.0);
+        double avgTat = totalTurnaround / requests.size();
+
+        return new MultiprogrammingOutput(
+                requests.size(), maxConcurrency, round3(startTime), round3(time),
                 round3(totalBurst), round3(cpuUtil), round3(avgTat), completedJobs, rows
         );
     }

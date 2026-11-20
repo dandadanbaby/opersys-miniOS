@@ -55,6 +55,12 @@ public class MultiprogrammingView extends ScrollPane {
     private final Canvas burstMapCanvas = new Canvas(480, 80);
     private MultiprogrammingOutput currentOutput;
 
+    // Execution mode selection (Processor Sharing vs Round Robin)
+    private MultiprogrammingEngine.ExecutionMode selectedMode = MultiprogrammingEngine.ExecutionMode.PROCESSOR_SHARING;
+    private final List<Button> modeTabs = new ArrayList<>();
+    private final TextField quantumField = new TextField("0.2");
+    private final HBox quantumBox = new HBox(6);
+
     public MultiprogrammingView() {
         VBox content = new VBox(20, createHeader(), createStatCards(), createMainWorkspace(), createTracePanel());
         content.setPadding(new Insets(0));
@@ -148,6 +154,8 @@ public class MultiprogrammingView extends ScrollPane {
         title.getStyleClass().add("panel-title");
         title.setStyle("-fx-font-size: 18px;");
 
+        HBox modeSelector = createModeSelector();
+
         Button addJobBtn = new Button("+ Add Job");
         addJobBtn.getStyleClass().add("btn-outline");
         addJobBtn.setOnAction(e -> {
@@ -161,7 +169,7 @@ public class MultiprogrammingView extends ScrollPane {
 
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
-        HBox controlsBar = new HBox(8, sp, addJobBtn, runBtn);
+        HBox controlsBar = new HBox(8, modeSelector, sp, addJobBtn, runBtn);
         controlsBar.setAlignment(Pos.CENTER_LEFT);
 
         HBox tableHeader = new HBox(8,
@@ -186,6 +194,49 @@ public class MultiprogrammingView extends ScrollPane {
         panel.getStyleClass().add("panel");
         panel.setMinWidth(0);
         return panel;
+    }
+
+    private HBox createModeSelector() {
+        HBox bar = new HBox(8);
+        bar.setAlignment(Pos.CENTER_LEFT);
+
+        for (MultiprogrammingEngine.ExecutionMode mode : MultiprogrammingEngine.ExecutionMode.values()) {
+            Button tab = new Button(mode.getDisplayName());
+            tab.getStyleClass().add("algo-tab");
+            if (mode == selectedMode) tab.getStyleClass().add("algo-tab-active");
+            tab.setOnAction(e -> selectMode(mode));
+            modeTabs.add(tab);
+            bar.getChildren().add(tab);
+        }
+
+        Label qLabel = new Label("Quantum:");
+        qLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8;");
+        quantumField.setPrefWidth(55);
+        quantumField.setPromptText("0.2");
+        Label qUnit = new Label("s");
+        qUnit.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+        quantumBox.setAlignment(Pos.CENTER_LEFT);
+        quantumBox.getChildren().addAll(qLabel, quantumField, qUnit);
+        quantumBox.setVisible(false);
+        quantumBox.setManaged(false);
+
+        bar.getChildren().add(quantumBox);
+        return bar;
+    }
+
+    private void selectMode(MultiprogrammingEngine.ExecutionMode mode) {
+        selectedMode = mode;
+        for (int i = 0; i < modeTabs.size(); i++) {
+            Button b = modeTabs.get(i);
+            b.getStyleClass().remove("algo-tab-active");
+            if (MultiprogrammingEngine.ExecutionMode.values()[i] == mode) {
+                b.getStyleClass().add("algo-tab-active");
+            }
+        }
+        boolean isRR = (mode == MultiprogrammingEngine.ExecutionMode.ROUND_ROBIN);
+        quantumBox.setVisible(isRR);
+        quantumBox.setManaged(isRR);
+        runSimulation();
     }
 
     private Label colHeader(String text, double width) {
@@ -312,8 +363,22 @@ public class MultiprogrammingView extends ScrollPane {
             return;
         }
 
+        double quantum = 0.2;
+        if (selectedMode == MultiprogrammingEngine.ExecutionMode.ROUND_ROBIN) {
+            try {
+                quantum = Double.parseDouble(quantumField.getText().trim());
+                if (quantum <= 0) {
+                    errorLabel.setText("Time Quantum must be positive (> 0).");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                errorLabel.setText("Time Quantum must be a valid number.");
+                return;
+            }
+        }
+
         session.setSimulationState(SimulationState.RUNNING);
-        currentOutput = engine.simulate(requests);
+        currentOutput = engine.simulate(requests, selectedMode, quantum);
         session.setSimulationState(SimulationState.COMPLETED);
         session.incrementSimulationsCompleted();
         session.setActiveProcesses(currentOutput.getTotalJobs());
@@ -326,7 +391,11 @@ public class MultiprogrammingView extends ScrollPane {
 
     private void updateView(MultiprogrammingOutput output) {
         jobsCountValue.setText(String.format("%02d", output.getTotalJobs()));
-        jobsCountSub.setText("Peak concurrency (nj): " + output.getMaxConcurrency());
+        if (selectedMode == MultiprogrammingEngine.ExecutionMode.ROUND_ROBIN) {
+            jobsCountSub.setText("Quantum: " + quantumField.getText().trim() + "s");
+        } else {
+            jobsCountSub.setText("Peak concurrency (nj): " + output.getMaxConcurrency());
+        }
 
         totalBurstValue.setText(String.format("%.2f", output.getTotalBurstWork()));
         finishTimeValue.setText(String.format("%.2f", output.getEndTime()));

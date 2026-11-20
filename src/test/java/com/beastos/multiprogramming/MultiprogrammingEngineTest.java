@@ -45,6 +45,23 @@ class MultiprogrammingEngineTest {
     }
 
     @Test
+    void testRoundRobinScenario() {
+        List<ProgramProcess> jobs = List.of(
+                new ProgramProcess("j1", 10.0, 0.3),
+                new ProgramProcess("j2", 10.2, 0.5),
+                new ProgramProcess("j3", 10.4, 0.1)
+        );
+
+        MultiprogrammingOutput output = engine.simulate(jobs, MultiprogrammingEngine.ExecutionMode.ROUND_ROBIN, 0.2);
+
+        assertEquals(3, output.getTotalJobs());
+        assertEquals(10.0, output.getStartTime(), 0.001);
+        assertEquals(10.9, output.getEndTime(), 0.001);
+        assertEquals(100.0, output.getCpuUtilization(), 0.01);
+        assertFalse(output.getTraceRows().isEmpty());
+    }
+
+    @Test
     void testValidation() {
         assertFalse(engine.validate(List.of()).isEmpty());
         assertFalse(engine.validate(List.of(new ProgramProcess("j1", -1.0, 0.3))).isEmpty());
