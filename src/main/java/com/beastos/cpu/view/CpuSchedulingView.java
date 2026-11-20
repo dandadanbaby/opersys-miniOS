@@ -177,7 +177,7 @@ public class CpuSchedulingView extends ScrollPane {
         Label panelTitle = new Label("Process Input Table");
         panelTitle.getStyleClass().add("panel-title");
 
-        Label algoHint = new Label("(FCFS | SJF | SRTF | Round Robin | Priority | Preemptive)");
+        Label algoHint = new Label("(FCFS | SJF | SRTF | Round Robin | Priority)");
         algoHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
 
         Button addBtn = new Button("+ Add Process");
@@ -239,7 +239,7 @@ public class CpuSchedulingView extends ScrollPane {
 
     // creates clickable tabs for each scheduling algorithm we implemented
     private FlowPane createAlgorithmTabs() {
-        String[] algorithms = {"FCFS", "SJF", "SRTF", "Round Robin", "Priority", "Priority (Preemptive)"};
+        String[] algorithms = {"FCFS", "SJF", "SRTF", "Round Robin", "Priority"};
         FlowPane tabBar = new FlowPane(6, 6);
         tabBar.setAlignment(Pos.CENTER_LEFT);
 
@@ -529,7 +529,6 @@ public class CpuSchedulingView extends ScrollPane {
             case "SJF" -> new SjfScheduler();
             case "SRTF" -> new SrtfScheduler();
             case "Priority" -> new PriorityScheduler();
-            case "Priority (Preemptive)" -> new PreemptivePriorityScheduler();
             case "Round Robin" -> new RoundRobinScheduler(quantum);
             default -> new FcfsScheduler();
         };
