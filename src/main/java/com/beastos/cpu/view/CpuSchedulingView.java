@@ -177,7 +177,7 @@ public class CpuSchedulingView extends ScrollPane {
         Label panelTitle = new Label("Process Input Table");
         panelTitle.getStyleClass().add("panel-title");
 
-        Label algoHint = new Label("(FCFS | SJF | Priority | Round Robin)");
+        Label algoHint = new Label("(FCFS | SJF | SRTF | Round Robin | Priority | Preemptive)");
         algoHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
 
         Button addBtn = new Button("+ Add Process");
@@ -190,7 +190,7 @@ public class CpuSchedulingView extends ScrollPane {
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
         // tab buttons to switch between algorithms
-        HBox tabBar = createAlgorithmTabs();
+        FlowPane tabBar = createAlgorithmTabs();
 
         // quantum config box: we only make this visible for Round Robin because the others don't use quantum
         Label configLabel = new Label("Config");
@@ -238,9 +238,9 @@ public class CpuSchedulingView extends ScrollPane {
     }
 
     // creates clickable tabs for each scheduling algorithm we implemented
-    private HBox createAlgorithmTabs() {
-        String[] algorithms = {"FCFS", "SJF", "Round Robin", "Priority"};
-        HBox tabBar = new HBox(8);
+    private FlowPane createAlgorithmTabs() {
+        String[] algorithms = {"FCFS", "SJF", "SRTF", "Round Robin", "Priority", "Priority (Preemptive)"};
+        FlowPane tabBar = new FlowPane(6, 6);
         tabBar.setAlignment(Pos.CENTER_LEFT);
 
         for (String algo : algorithms) {
@@ -527,7 +527,9 @@ public class CpuSchedulingView extends ScrollPane {
         CpuScheduler scheduler = switch (selectedAlgorithm) {
             case "FCFS" -> new FcfsScheduler();
             case "SJF" -> new SjfScheduler();
+            case "SRTF" -> new SrtfScheduler();
             case "Priority" -> new PriorityScheduler();
+            case "Priority (Preemptive)" -> new PreemptivePriorityScheduler();
             case "Round Robin" -> new RoundRobinScheduler(quantum);
             default -> new FcfsScheduler();
         };
